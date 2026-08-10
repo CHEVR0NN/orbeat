@@ -143,7 +143,7 @@ body {
   background: var(--bg-space-dark);
   border: 1px solid var(--accent-cyan);
   border-radius: 6px;
-  color: var(--text-main);
+  color: var(--text-white);
   padding: 0.65rem 0.8rem;
   font-family: var(--font-hud);
   font-size: 1rem;
@@ -291,7 +291,7 @@ body {
 }
 
 .profile-card-legend-dot-core {
-  background: var(--accent-yellow);
+  background: var(--accent-cyan);
 }
 
 .profile-card-legend-dot-candidate {

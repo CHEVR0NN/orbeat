@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { writeSettings } from "../lib/settings";
 import { getTopArtists, LastfmError } from "../lib/lastfm";
+import { cacheKey, writeCache } from "../lib/cache";
 import type { Settings } from "../types";
 
 interface SettingsPanelProps {
@@ -24,7 +25,8 @@ export default function SettingsPanel({ onSaved }: SettingsPanelProps) {
 
     setChecking(true);
     try {
-      await getTopArtists(apiKey.trim(), username.trim(), "overall");
+      const artists = await getTopArtists(apiKey.trim(), username.trim(), "overall");
+      writeCache(cacheKey("topArtists", username.trim(), "overall"), artists);
       const settings: Settings = { apiKey: apiKey.trim(), username: username.trim() };
       writeSettings(settings);
       onSaved(settings);

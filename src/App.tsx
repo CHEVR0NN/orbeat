@@ -96,6 +96,8 @@ export default function App() {
     setSettings(null);
     setProfile(null);
     setTopAlbum(null);
+    setLoadState({ status: "loading" });
+    setSelected(null);
   }
 
   if (!settings) {

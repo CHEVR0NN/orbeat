@@ -32,3 +32,10 @@ export interface ArtistInfo {
   listeners: number;
   playcount: number;
 }
+
+export interface GraphDataBundle {
+  core: TopArtist[];
+  tagsByArtist: Record<string, ArtistTag[]>;
+  similarByArtist: Record<string, SimilarArtist[]>;
+  infoByArtist: Record<string, ArtistInfo>;
+}

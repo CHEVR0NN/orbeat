@@ -1,10 +1,24 @@
+@import url("https://fonts.googleapis.com/css2?family=Bungee&family=Rubik+Mono+One&family=Space+Mono:wght@400;700&family=VT323&family=Inter:wght@400;600;800&display=swap");
+
 :root {
   --color-bg-inner: #1b1035;
   --color-bg-outer: #05030d;
   --color-core: #ffb454;
   --color-candidate: #57d9d9;
   --color-text: #f4f1ff;
-  --font-body: system-ui, sans-serif;
+
+  /* Retro Cosmic Pop / Y2K Space-Age palette */
+  --bg-space: #0e0b16;
+  --bg-space-dark: #0a0e1a;
+  --accent-cyan: #23e5d8;
+  --accent-yellow: #ffb830;
+  --accent-pink: #e892e8;
+  --accent-coral: #ff497c;
+  --text-main: #ffffff;
+
+  --font-display: "Bungee", "Rubik Mono One", system-ui, sans-serif;
+  --font-hud: "Space Mono", "VT323", monospace;
+  --font-body: "Inter", system-ui, sans-serif;
 }
 
 * {
@@ -13,8 +27,11 @@
 
 body {
   margin: 0;
-  background: var(--color-bg-outer);
-  color: var(--color-text);
+  background:
+    radial-gradient(ellipse at 50% 0%, #241a3d 0%, transparent 55%),
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.025) 0px, rgba(255, 255, 255, 0.025) 1px, transparent 1px, transparent 3px),
+    var(--bg-space);
+  color: var(--text-main);
   font-family: var(--font-body);
 }
 
@@ -23,7 +40,11 @@ body {
   align-items: center;
   justify-content: center;
   height: 100vh;
-  font-size: 1.25rem;
+  font-family: var(--font-hud);
+  font-size: 1.4rem;
+  letter-spacing: 0.05em;
+  color: var(--accent-cyan);
+  text-shadow: 0 0 8px rgba(35, 229, 216, 0.6);
 }
 
 .app-shell {
@@ -35,33 +56,82 @@ body {
   position: absolute;
   top: 1rem;
   right: 1rem;
-  background: rgba(10, 6, 24, 0.85);
-  border: 1px solid var(--color-candidate);
-  border-radius: 8px;
-  padding: 1rem;
-  min-width: 200px;
+  background: rgba(14, 11, 22, 0.9);
+  border: 2px solid var(--accent-cyan);
+  border-radius: 10px;
+  box-shadow: 0 0 6px var(--accent-cyan), 0 0 24px rgba(35, 229, 216, 0.35), inset 0 0 20px rgba(35, 229, 216, 0.06);
+  padding: 1.25rem;
+  min-width: 220px;
+  font-family: var(--font-hud);
+}
+
+.node-detail h2 {
+  margin: 0 0 0.5rem;
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  color: var(--accent-yellow);
+  text-shadow: 2px 2px 0 var(--accent-coral), 4px 4px 0 rgba(0, 0, 0, 0.5);
+}
+
+.node-detail p {
+  margin: 0.35rem 0;
+  color: var(--text-main);
+  font-size: 0.85rem;
+}
+
+.node-detail button {
+  margin-top: 0.75rem;
+  background: transparent;
+  border: 1px solid var(--accent-pink);
+  border-radius: 6px;
+  color: var(--accent-pink);
+  cursor: pointer;
+  font-family: var(--font-hud);
+  font-size: 0.85rem;
+  padding: 0.5rem 0.9rem;
+  transition: box-shadow 150ms ease, color 150ms ease;
+}
+
+.node-detail button:hover {
+  color: var(--bg-space);
+  background: var(--accent-pink);
+  box-shadow: 0 0 12px var(--accent-pink);
 }
 
 .settings-panel {
-  max-width: 420px;
+  max-width: 440px;
   margin: 4rem auto;
-  padding: 2rem;
+  padding: 2.5rem 2rem;
   text-align: center;
+  background: rgba(14, 11, 22, 0.9);
+  border: 2px solid var(--accent-cyan);
+  border-radius: 14px;
+  box-shadow: 0 0 8px var(--accent-cyan), 0 0 40px rgba(35, 229, 216, 0.3), inset 0 0 30px rgba(35, 229, 216, 0.05);
 }
 
 .settings-panel h1 {
   margin-top: 0;
-  color: var(--color-core);
+  font-family: var(--font-display);
+  font-size: 2.5rem;
+  letter-spacing: 0.03em;
+  color: var(--accent-yellow);
+  text-shadow: 3px 3px 0 var(--accent-coral), 6px 6px 0 rgba(0, 0, 0, 0.6);
+}
+
+.settings-panel p {
+  font-family: var(--font-body);
+  color: var(--text-main);
+  opacity: 0.85;
 }
 
 .settings-panel a {
-  color: var(--color-candidate);
+  color: var(--accent-cyan);
 }
 
 .settings-panel form {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 1.25rem;
   text-align: left;
   margin-top: 1.5rem;
 }
@@ -69,28 +139,48 @@ body {
 .settings-panel label {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
-  font-size: 0.9rem;
+  gap: 0.4rem;
+  font-family: var(--font-hud);
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent-pink);
 }
 
 .settings-panel input {
-  background: var(--color-bg-inner);
-  border: 1px solid var(--color-candidate);
+  background: var(--bg-space-dark);
+  border: 1px solid var(--accent-cyan);
   border-radius: 6px;
-  color: var(--color-text);
-  padding: 0.6rem 0.75rem;
+  color: var(--text-main);
+  padding: 0.65rem 0.8rem;
+  font-family: var(--font-hud);
   font-size: 1rem;
+  transition: box-shadow 150ms ease;
+}
+
+.settings-panel input:focus {
+  outline: none;
+  box-shadow: 0 0 10px var(--accent-cyan);
 }
 
 .settings-panel button {
-  background: var(--color-core);
+  background: linear-gradient(90deg, var(--accent-cyan), var(--accent-pink));
   border: none;
   border-radius: 6px;
-  color: var(--color-bg-outer);
+  color: var(--bg-space);
   cursor: pointer;
+  font-family: var(--font-hud);
   font-size: 1rem;
-  font-weight: 600;
-  padding: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 0.8rem;
+  transition: box-shadow 150ms ease, transform 150ms ease;
+}
+
+.settings-panel button:hover:not(:disabled) {
+  box-shadow: 0 0 16px var(--accent-cyan), 0 0 30px rgba(232, 146, 232, 0.5);
+  transform: translateY(-1px);
 }
 
 .settings-panel button:disabled {
@@ -99,6 +189,7 @@ body {
 }
 
 .settings-panel [role="alert"] {
-  color: var(--color-core);
-  font-size: 0.9rem;
+  color: var(--accent-coral);
+  font-family: var(--font-hud);
+  font-size: 0.85rem;
 }

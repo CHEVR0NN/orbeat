@@ -5,18 +5,28 @@
 }
 
 .taste-map-link {
-  stroke: var(--color-text);
-  stroke-opacity: 0.15;
+  stroke: var(--accent-cyan);
+  stroke-opacity: 0.3;
   stroke-width: 1;
 }
 
 .taste-map-node-core {
-  fill: var(--color-core);
+  fill: var(--accent-yellow);
+  stroke: var(--accent-coral);
+  stroke-width: 2;
   cursor: grab;
+  filter: drop-shadow(0 0 6px var(--accent-yellow));
 }
 
 .taste-map-node-candidate {
-  fill: var(--color-candidate);
+  fill: var(--accent-pink);
+  stroke: var(--accent-cyan);
+  stroke-width: 1;
   cursor: grab;
-  transition: opacity 200ms ease;
+  filter: drop-shadow(0 0 4px var(--accent-pink));
+  transition: opacity 200ms ease, filter 200ms ease;
+}
+
+.taste-map-node-candidate:hover {
+  filter: drop-shadow(0 0 10px var(--accent-cyan));
 }

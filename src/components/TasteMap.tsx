@@ -113,8 +113,8 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
     >
       <defs>
         <radialGradient id="taste-map-bg" cx="50%" cy="45%" r="75%">
-          <stop offset="0%" stopColor="var(--color-bg-inner)" />
-          <stop offset="100%" stopColor="var(--color-bg-outer)" />
+          <stop offset="0%" stopColor="#241a3d" />
+          <stop offset="100%" stopColor="var(--bg-space)" />
         </radialGradient>
       </defs>
       <rect x={0} y={0} width={WIDTH} height={HEIGHT} fill="url(#taste-map-bg)" />

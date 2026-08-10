@@ -14,12 +14,15 @@ const REQUEST_DELAY_MS = 250;
 
 const delay = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
-async function getCachedOrFetch<T>(key: string, fetchFn: () => Promise<T>): Promise<T> {
+async function getCachedOrFetch<T>(
+  key: string,
+  fetchFn: () => Promise<T>
+): Promise<{ data: T; fromCache: boolean }> {
   const cached = readCache<T>(key);
-  if (!isStale(cached)) return cached!.data;
+  if (!isStale(cached)) return { data: cached!.data, fromCache: true };
   const data = await fetchFn();
   writeCache(key, data);
-  return data;
+  return { data, fromCache: false };
 }
 
 export async function fetchGraphData(
@@ -28,22 +31,26 @@ export async function fetchGraphData(
   fetchers: Fetchers = DEFAULT_FETCHERS,
   requestDelayMs: number = REQUEST_DELAY_MS
 ): Promise<GraphDataBundle> {
-  const core = await getCachedOrFetch(cacheKey("topArtists", settings.username, period), () =>
-    fetchers.getTopArtists(settings.apiKey, settings.username, period)
+  const { data: core } = await getCachedOrFetch(
+    cacheKey("topArtists", settings.username, period),
+    () => fetchers.getTopArtists(settings.apiKey, settings.username, period)
   );
 
   const tagsByArtist: GraphDataBundle["tagsByArtist"] = {};
   const similarByArtist: GraphDataBundle["similarByArtist"] = {};
 
   for (const artist of core) {
-    tagsByArtist[artist.name] = await getCachedOrFetch(cacheKey("topTags", artist.name), () =>
+    const tagsResult = await getCachedOrFetch(cacheKey("topTags", artist.name), () =>
       fetchers.getTopTags(settings.apiKey, artist.name)
     );
-    await delay(requestDelayMs);
-    similarByArtist[artist.name] = await getCachedOrFetch(cacheKey("similar", artist.name), () =>
+    tagsByArtist[artist.name] = tagsResult.data;
+    if (!tagsResult.fromCache) await delay(requestDelayMs);
+
+    const similarResult = await getCachedOrFetch(cacheKey("similar", artist.name), () =>
       fetchers.getSimilar(settings.apiKey, artist.name, 10)
     );
-    await delay(requestDelayMs);
+    similarByArtist[artist.name] = similarResult.data;
+    if (!similarResult.fromCache) await delay(requestDelayMs);
   }
 
   const coreNames = new Set(core.map((a) => a.name));
@@ -56,11 +63,11 @@ export async function fetchGraphData(
 
   const infoByArtist: GraphDataBundle["infoByArtist"] = {};
   for (const name of [...core.map((a) => a.name), ...candidateNames]) {
-    const info = await getCachedOrFetch(cacheKey("info", name), () =>
+    const { data: info, fromCache } = await getCachedOrFetch(cacheKey("info", name), () =>
       fetchers.getInfo(settings.apiKey, name)
     );
     if (info) infoByArtist[name] = info;
-    await delay(requestDelayMs);
+    if (!fromCache) await delay(requestDelayMs);
   }
 
   return { core, tagsByArtist, similarByArtist, infoByArtist };

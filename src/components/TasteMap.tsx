@@ -22,10 +22,46 @@ const MIN_OPACITY = 0.35;
 const MAX_LINK_DISTANCE = 240;
 const MIN_LINK_DISTANCE = 70;
 const GALAXY_RADIUS = Math.min(WIDTH, HEIGHT) * 0.32;
-const ZOOM_SCALE = 2.6;
+
+const ORBIT_INNER_RX = 55;
+const ORBIT_INNER_RY = 20;
+const ORBIT_RING_STEP_RX = 26;
+const ORBIT_RING_STEP_RY = 10;
+const ORBIT_TILT_DEG = -20;
+const ORBIT_GOLDEN_ANGLE_DEG = 137.5;
+const ORBIT_TARGET_HALF_WIDTH = 320;
+const ORBIT_SCALE_MIN = 1.4;
+const ORBIT_SCALE_MAX = 3.4;
+
+const CANDIDATE_COLOR_CYCLE = [
+  { gradientId: "taste-map-node-candidate-fill", accentVar: "var(--accent-pink)" },
+  { gradientId: "taste-map-node-candidate-fill-yellow", accentVar: "var(--accent-yellow)" },
+  { gradientId: "taste-map-node-candidate-fill-coral", accentVar: "var(--accent-coral)" },
+];
 
 function lerp(min: number, max: number, t: number): number {
   return min + (max - min) * Math.max(0, Math.min(1, t));
+}
+
+function clamp(v: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, v));
+}
+
+function orbitRx(ringIndex: number): number {
+  return ORBIT_INNER_RX + ringIndex * ORBIT_RING_STEP_RX;
+}
+
+function orbitRy(ringIndex: number): number {
+  return ORBIT_INNER_RY + ringIndex * ORBIT_RING_STEP_RY;
+}
+
+function orbitPosition(ringIndex: number): { px: number; py: number } {
+  const angleDeg = (ringIndex * ORBIT_GOLDEN_ANGLE_DEG) % 360;
+  const angleRad = (angleDeg * Math.PI) / 180;
+  return {
+    px: orbitRx(ringIndex) * Math.cos(angleRad),
+    py: orbitRy(ringIndex) * Math.sin(angleRad),
+  };
 }
 
 function radiusFor(node: GraphNode): number {
@@ -72,6 +108,16 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
     const coreId = node.kind === "core" ? node.id : node.sourceCoreArtist;
     return galaxyAnchors.get(coreId ?? "") ?? { x: WIDTH / 2, y: HEIGHT / 2 };
   }
+
+  const ringIndexById = useMemo(() => {
+    const map = new Map<string, number>();
+    if (!zoomedGalaxyId) return map;
+    graph.nodes
+      .filter((n) => n.kind !== "core" && n.sourceCoreArtist === zoomedGalaxyId)
+      .sort((a, b) => b.relevance - a.relevance)
+      .forEach((n, i) => map.set(n.id, i));
+    return map;
+  }, [graph, zoomedGalaxyId]);
 
   useEffect(() => {
     setZoomedGalaxyId(null);
@@ -151,7 +197,11 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
   }
 
   const zoomedAnchor = zoomedGalaxyId ? galaxyAnchors.get(zoomedGalaxyId) ?? null : null;
-  const scale = zoomedAnchor ? ZOOM_SCALE : 1;
+  const visibleCount = ringIndexById.size;
+  const maxOrbitRx = visibleCount > 0 ? ORBIT_INNER_RX + (visibleCount - 1) * ORBIT_RING_STEP_RX : ORBIT_INNER_RX;
+  const scale = zoomedAnchor
+    ? clamp(ORBIT_TARGET_HALF_WIDTH / Math.max(maxOrbitRx, 1), ORBIT_SCALE_MIN, ORBIT_SCALE_MAX)
+    : 1;
   const tx = zoomedAnchor ? WIDTH / 2 - scale * zoomedAnchor.x : 0;
   const ty = zoomedAnchor ? HEIGHT / 2 - scale * zoomedAnchor.y : 0;
   const sceneStyle = {
@@ -159,6 +209,28 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
     transformOrigin: "0 0",
     transition: "transform 700ms cubic-bezier(0.22, 1, 0.36, 1)",
   };
+
+  const orbitPlanets = zoomedGalaxyId
+    ? nodes
+        .filter((n) => ringIndexById.has(n.id))
+        .map((node) => {
+          const ringIndex = ringIndexById.get(node.id)!;
+          const { px, py } = orbitPosition(ringIndex);
+          const color = CANDIDATE_COLOR_CYCLE[ringIndex % 3];
+          return {
+            node,
+            ringIndex,
+            rx: orbitRx(ringIndex),
+            ry: orbitRy(ringIndex),
+            px,
+            py,
+            gradientId: color.gradientId,
+            accentVar: color.accentVar,
+            hasAccessory: ringIndex % 3 === 2,
+          };
+        })
+        .sort((a, b) => a.ringIndex - b.ringIndex)
+    : [];
 
   return (
     <div className="taste-map-wrap">
@@ -187,10 +259,13 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
             <stop offset="0%" stopColor="var(--accent-pink)" />
             <stop offset="100%" stopColor="var(--bg-space-dark)" />
           </radialGradient>
-          <radialGradient id="taste-map-galaxy-disk" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor="rgba(35, 229, 216, 0.22)" />
-            <stop offset="55%" stopColor="rgba(232, 146, 232, 0.10)" />
-            <stop offset="100%" stopColor="rgba(35, 229, 216, 0)" />
+          <radialGradient id="taste-map-node-candidate-fill-yellow" cx="35%" cy="30%" r="70%">
+            <stop offset="0%" stopColor="var(--accent-yellow)" />
+            <stop offset="100%" stopColor="var(--bg-space-dark)" />
+          </radialGradient>
+          <radialGradient id="taste-map-node-candidate-fill-coral" cx="35%" cy="30%" r="70%">
+            <stop offset="0%" stopColor="var(--accent-coral)" />
+            <stop offset="100%" stopColor="var(--bg-space-dark)" />
           </radialGradient>
           <filter id="taste-map-glow-core" x="-100%" y="-100%" width="300%" height="300%">
             <feGaussianBlur in="SourceGraphic" stdDeviation="4.5" result="blur" />
@@ -206,9 +281,6 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
               <feMergeNode in="SourceGraphic" />
             </feMerge>
           </filter>
-          <filter id="taste-map-disk-blur" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur in="SourceGraphic" stdDeviation="8" />
-          </filter>
         </defs>
         <rect
           x={0}
@@ -218,57 +290,86 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
           fill="url(#taste-map-bg)"
           onClick={() => setZoomedGalaxyId(null)}
         />
-        <ellipse
-          cx={WIDTH / 2}
-          cy={HEIGHT / 2}
-          rx={260}
-          ry={95}
-          transform={`rotate(-18 ${WIDTH / 2} ${HEIGHT / 2})`}
-          fill="url(#taste-map-galaxy-disk)"
-          filter="url(#taste-map-disk-blur)"
-          pointerEvents="none"
-          style={{
-            opacity: zoomedGalaxyId ? 1 : 0,
-            transition: "opacity 700ms ease",
-          }}
-        />
         <g style={sceneStyle}>
-          {nodes.map((node) => {
-            const isCore = node.kind === "core";
-            const visible = isCore || zoomedGalaxyId === node.sourceCoreArtist;
-            return (
+          {nodes
+            .filter((node) => node.kind === "core")
+            .map((node) => (
               <g key={node.id}>
-                {isCore && (
-                  <circle
-                    className="taste-map-node-ring"
-                    cx={node.x}
-                    cy={node.y}
-                    r={radiusFor(node) + 12}
-                    pointerEvents="none"
-                  />
-                )}
+                <circle
+                  className="taste-map-node-ring"
+                  cx={node.x}
+                  cy={node.y}
+                  r={radiusFor(node) + 12}
+                  pointerEvents="none"
+                />
                 <circle
                   cx={node.x}
                   cy={node.y}
                   r={radiusFor(node)}
-                  className={isCore ? "taste-map-node-core" : "taste-map-node-candidate"}
-                  fill={
-                    isCore ? "url(#taste-map-node-core-fill)" : "url(#taste-map-node-candidate-fill)"
-                  }
-                  filter={isCore ? "url(#taste-map-glow-core)" : "url(#taste-map-glow-candidate)"}
+                  className="taste-map-node-core"
+                  fill="url(#taste-map-node-core-fill)"
+                  filter="url(#taste-map-glow-core)"
                   style={{
-                    opacity: visible ? opacityFor(node) : 0,
-                    pointerEvents: visible ? "auto" : "none",
+                    opacity: opacityFor(node),
+                    pointerEvents: "auto",
                     transition: "opacity 350ms ease, filter 200ms ease",
                   }}
                   onPointerDown={() => handlePointerDown(node)}
-                  onClick={(e) => (isCore ? handleCoreClick(e, node) : handleCandidateClick(e, node))}
+                  onClick={(e) => handleCoreClick(e, node)}
                 >
                   <title>{node.id}</title>
                 </circle>
               </g>
-            );
-          })}
+            ))}
+          {zoomedGalaxyId && zoomedAnchor && (
+            <g transform={`translate(${zoomedAnchor.x}, ${zoomedAnchor.y}) rotate(${ORBIT_TILT_DEG})`}>
+              {orbitPlanets.map(({ node, rx, ry }) => (
+                <ellipse
+                  key={`ring-${node.id}`}
+                  cx={0}
+                  cy={0}
+                  rx={rx}
+                  ry={ry}
+                  className="taste-map-orbit-ring"
+                  pointerEvents="none"
+                />
+              ))}
+              {orbitPlanets.map(({ node, px, py, gradientId, accentVar, hasAccessory }) => (
+                <g key={`planet-${node.id}`}>
+                  {hasAccessory && (
+                    <g transform={`translate(${px}, ${py}) rotate(25)`}>
+                      <ellipse
+                        cx={0}
+                        cy={0}
+                        rx={radiusFor(node) * 1.7}
+                        ry={radiusFor(node) * 0.5}
+                        fill="none"
+                        stroke={accentVar}
+                        strokeWidth={1.5}
+                        opacity={0.5}
+                        pointerEvents="none"
+                      />
+                    </g>
+                  )}
+                  <circle
+                    cx={px}
+                    cy={py}
+                    r={radiusFor(node)}
+                    className="taste-map-node-candidate"
+                    fill={`url(#${gradientId})`}
+                    filter="url(#taste-map-glow-candidate)"
+                    style={{
+                      opacity: opacityFor(node),
+                      transition: "opacity 350ms ease, filter 200ms ease",
+                    }}
+                    onClick={(e) => handleCandidateClick(e, node)}
+                  >
+                    <title>{node.id}</title>
+                  </circle>
+                </g>
+              ))}
+            </g>
+          )}
         </g>
       </svg>
     </div>

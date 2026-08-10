@@ -55,6 +55,14 @@
   animation: taste-map-ring-pulse 4s ease-in-out infinite;
 }
 
+.taste-map-orbit-ring {
+  fill: none;
+  stroke: var(--accent-cyan);
+  stroke-width: 1;
+  stroke-dasharray: 3 5;
+  opacity: 0.25;
+}
+
 @keyframes taste-map-ring-pulse {
   0%,
   100% {

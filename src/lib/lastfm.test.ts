@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { getTopArtists, getTopTags, getSimilar, getInfo, LastfmError } from "./lastfm";
+import { getTopArtists, getTopTags, getSimilar, getInfo, getUserInfo, getTopAlbums, LastfmError } from "./lastfm";
 
 function mockFetchOnce(body: unknown) {
   vi.stubGlobal(
@@ -62,5 +62,42 @@ describe("lastfm", () => {
   it("throws LastfmError when the API responds with an error payload", async () => {
     mockFetchOnce({ error: 6, message: "The artist you supplied could not be found" });
     await expect(getTopTags("key", "???")).rejects.toThrow(LastfmError);
+  });
+
+  it("getUserInfo maps name, largest avatar image, and total scrobble count", async () => {
+    mockFetchOnce({
+      user: {
+        name: "kai",
+        playcount: "48213",
+        image: [
+          { size: "small", "#text": "small.jpg" },
+          { size: "extralarge", "#text": "large.jpg" },
+        ],
+      },
+    });
+    const result = await getUserInfo("key", "kai");
+    expect(result).toEqual({ name: "kai", image: "large.jpg", playcount: 48213 });
+  });
+
+  it("getUserInfo returns null image when Last.fm has no avatar set", async () => {
+    mockFetchOnce({
+      user: { name: "kai", playcount: "0", image: [{ size: "extralarge", "#text": "" }] },
+    });
+    const result = await getUserInfo("key", "kai");
+    expect(result.image).toBeNull();
+  });
+
+  it("getTopAlbums maps album name and artist name", async () => {
+    mockFetchOnce({
+      topalbums: { album: [{ name: "OK Computer", artist: { name: "Radiohead" } }] },
+    });
+    const result = await getTopAlbums("key", "kai", 1);
+    expect(result).toEqual([{ name: "OK Computer", artist: "Radiohead" }]);
+  });
+
+  it("getTopAlbums returns an empty array when the user has no scrobbled albums", async () => {
+    mockFetchOnce({ topalbums: { album: [] } });
+    const result = await getTopAlbums("key", "kai", 1);
+    expect(result).toEqual([]);
   });
 });

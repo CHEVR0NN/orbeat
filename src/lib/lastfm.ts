@@ -1,4 +1,12 @@
-import type { Period, TopArtist, ArtistTag, SimilarArtist, ArtistInfo } from "../types";
+import type {
+  Period,
+  TopArtist,
+  ArtistTag,
+  SimilarArtist,
+  ArtistInfo,
+  UserProfile,
+  TopAlbum,
+} from "../types";
 
 const BASE_URL = "https://ws.audioscrobbler.com/2.0/";
 const CORE_ARTIST_COUNT = 5;
@@ -64,4 +72,29 @@ export async function getInfo(apiKey: string, artist: string): Promise<ArtistInf
     listeners: Number(info.stats?.listeners ?? 0),
     playcount: Number(info.stats?.playcount ?? 0),
   };
+}
+
+export async function getUserInfo(apiKey: string, username: string): Promise<UserProfile> {
+  const json = await call({ method: "user.getinfo", user: username }, apiKey);
+  const user = json.user ?? {};
+  const images = user.image ?? [];
+  const largest = images.length > 0 ? images[images.length - 1]?.["#text"] : "";
+  return {
+    name: user.name ?? username,
+    image: largest ? largest : null,
+    playcount: Number(user.playcount ?? 0),
+  };
+}
+
+export async function getTopAlbums(
+  apiKey: string,
+  username: string,
+  limit = 1
+): Promise<TopAlbum[]> {
+  const json = await call(
+    { method: "user.gettopalbums", user: username, limit: String(limit) },
+    apiKey
+  );
+  const albums = json.topalbums?.album ?? [];
+  return albums.map((a: any) => ({ name: a.name, artist: a.artist?.name ?? "" }));
 }

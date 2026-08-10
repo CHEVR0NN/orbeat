@@ -60,3 +60,14 @@ export interface Graph {
   nodes: GraphNode[];
   links: GraphLink[];
 }
+
+export interface UserProfile {
+  name: string;
+  image: string | null;
+  playcount: number;
+}
+
+export interface TopAlbum {
+  name: string;
+  artist: string;
+}

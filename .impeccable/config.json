@@ -8,6 +8,21 @@
         "value": "inter",
         "createdAt": "2026-08-10T09:34:13.424Z",
         "reason": "User explicitly requested Inter for general UI in the Retro Cosmic Pop brief"
+      },
+      {
+        "rule": "codex-grid-background",
+        "value": "*",
+        "files": [
+          "src/index.css"
+        ],
+        "createdAt": "2026-08-10T21:19:14.202Z",
+        "reason": "User confirmed CRT scanline overlay is an explicitly requested retro-monitor device from the original spec"
+      },
+      {
+        "rule": "overused-font",
+        "value": "space grotesk",
+        "createdAt": "2026-08-10T21:21:05.649Z",
+        "reason": "User explicitly chose Space Grotesk as the body font replacing Inter"
       }
     ]
   }

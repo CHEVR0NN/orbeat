@@ -43,11 +43,6 @@ body {
   text-shadow: 0 0 8px rgba(35, 229, 216, 0.6);
 }
 
-.app-shell {
-  position: relative;
-  height: 100vh;
-}
-
 .node-detail {
   position: absolute;
   top: 1rem;

@@ -11,6 +11,8 @@ export function topGenre(tagsByArtist: Record<string, ArtistTag[]>): string | nu
   let best: string | null = null;
   let bestCount = -1;
   for (const [name, count] of counts) {
+    // strict > (not >=) means the first-seen tag wins ties, matching
+    // Object.values/Map iteration order
     if (count > bestCount) {
       best = name;
       bestCount = count;

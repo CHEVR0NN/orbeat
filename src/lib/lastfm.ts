@@ -23,10 +23,11 @@ async function call(params: Record<string, string>, apiKey: string): Promise<any
 export async function getTopArtists(
   apiKey: string,
   username: string,
-  period: Period
+  period: Period,
+  limit = CORE_ARTIST_COUNT
 ): Promise<TopArtist[]> {
   const json = await call(
-    { method: "user.gettopartists", user: username, period, limit: String(CORE_ARTIST_COUNT) },
+    { method: "user.gettopartists", user: username, period, limit: String(limit) },
     apiKey
   );
   const artists = json.topartists?.artist ?? [];

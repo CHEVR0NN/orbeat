@@ -39,3 +39,24 @@ export interface GraphDataBundle {
   similarByArtist: Record<string, SimilarArtist[]>;
   infoByArtist: Record<string, ArtistInfo>;
 }
+
+export interface GraphNode {
+  id: string;
+  kind: "core" | "candidate";
+  relevance: number;
+  listeners: number;
+  sourceCoreArtist?: string;
+  match?: number;
+  x?: number;
+  y?: number;
+}
+
+export interface GraphLink {
+  source: string;
+  target: string;
+}
+
+export interface Graph {
+  nodes: GraphNode[];
+  links: GraphLink[];
+}

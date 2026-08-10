@@ -56,4 +56,14 @@ describe("fetchGraphData", () => {
     expect(fetchers.getTopArtists).toHaveBeenCalledTimes(1);
     expect(fetchers.getTopTags).toHaveBeenCalledTimes(2);
   });
+
+  it("forceRefresh bypasses the cache and refetches even when fresh data exists", async () => {
+    const fetchers = makeFetchers();
+    const settings = { apiKey: "key", username: "kai" };
+    await fetchGraphData(settings, "overall", fetchers, 0);
+    await fetchGraphData(settings, "overall", fetchers, 0, true);
+
+    expect(fetchers.getTopArtists).toHaveBeenCalledTimes(2);
+    expect(fetchers.getTopTags).toHaveBeenCalledTimes(4);
+  });
 });

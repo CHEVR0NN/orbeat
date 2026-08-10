@@ -26,3 +26,15 @@ export function isStale(entry: CacheEntry<unknown> | null, maxAgeMs = MAX_AGE_MS
   if (!entry) return true;
   return Date.now() - entry.fetchedAt > maxAgeMs;
 }
+
+export async function getCachedOrFetch<T>(
+  key: string,
+  fetchFn: () => Promise<T>,
+  forceRefresh = false
+): Promise<{ data: T; fromCache: boolean }> {
+  const cached = readCache<T>(key);
+  if (!forceRefresh && !isStale(cached)) return { data: cached!.data, fromCache: true };
+  const data = await fetchFn();
+  writeCache(key, data);
+  return { data, fromCache: false };
+}

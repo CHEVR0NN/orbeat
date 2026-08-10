@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { cacheKey, readCache, writeCache, isStale } from "./cache";
+import { cacheKey, readCache, writeCache, isStale, getCachedOrFetch } from "./cache";
 
 describe("cache", () => {
   beforeEach(() => {
@@ -47,5 +47,29 @@ describe("cache", () => {
     const entry = readCache("weird-key");
     expect(entry).not.toBeNull();
     expect(entry).toEqual({ not: "a cache entry" });
+  });
+
+  it("getCachedOrFetch returns cached data without calling fetchFn when fresh", async () => {
+    writeCache("k", "cached-value");
+    const fetchFn = vi.fn(async () => "fresh-value");
+    const result = await getCachedOrFetch("k", fetchFn);
+    expect(result).toEqual({ data: "cached-value", fromCache: true });
+    expect(fetchFn).not.toHaveBeenCalled();
+  });
+
+  it("getCachedOrFetch calls fetchFn and writes cache when missing", async () => {
+    const fetchFn = vi.fn(async () => "fresh-value");
+    const result = await getCachedOrFetch("k", fetchFn);
+    expect(result).toEqual({ data: "fresh-value", fromCache: false });
+    expect(readCache<string>("k")?.data).toBe("fresh-value");
+  });
+
+  it("getCachedOrFetch with forceRefresh bypasses a fresh cache entry", async () => {
+    writeCache("k", "cached-value");
+    const fetchFn = vi.fn(async () => "fresh-value");
+    const result = await getCachedOrFetch("k", fetchFn, true);
+    expect(result).toEqual({ data: "fresh-value", fromCache: false });
+    expect(fetchFn).toHaveBeenCalledTimes(1);
+    expect(readCache<string>("k")?.data).toBe("fresh-value");
   });
 });

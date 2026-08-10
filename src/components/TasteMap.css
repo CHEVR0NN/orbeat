@@ -10,11 +10,11 @@
 }
 
 .taste-map-node-core {
-  fill: var(--accent-yellow);
+  fill: var(--accent-cyan);
   stroke: var(--accent-coral);
   stroke-width: 2;
   cursor: grab;
-  filter: drop-shadow(0 0 6px var(--accent-yellow));
+  filter: drop-shadow(0 0 6px var(--accent-cyan));
 }
 
 .taste-map-node-candidate {

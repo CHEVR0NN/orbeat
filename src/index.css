@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Bungee&family=Rubik+Mono+One&family=Space+Mono:wght@400;700&family=VT323&family=Inter:wght@400;600;800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Bungee&family=Rubik+Mono+One&family=Space+Mono:wght@400;700&family=VT323&family=Hanken+Grotesk:wght@400;600;800&display=swap");
 
 :root {
   /* Retro Cosmic Pop / Y2K Space-Age palette */
@@ -12,7 +12,7 @@
 
   --font-display: "Bungee", "Rubik Mono One", system-ui, sans-serif;
   --font-hud: "Space Mono", "VT323", monospace;
-  --font-body: "Inter", system-ui, sans-serif;
+  --font-body: "Hanken Grotesk", system-ui, sans-serif;
 }
 
 * {

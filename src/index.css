@@ -1,18 +1,19 @@
-@import url("https://fonts.googleapis.com/css2?family=Bungee&family=Rubik+Mono+One&family=Space+Mono:wght@400;700&family=VT323&family=Hanken+Grotesk:wght@400;600;800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Bungee&family=Rubik+Mono+One&family=Space+Mono:wght@400;700&family=VT323&family=Inter:wght@400;500;600;700&display=swap");
 
 :root {
   /* Retro Cosmic Pop / Y2K Space-Age palette */
   --bg-space: #0e0b16;
   --bg-space-dark: #0a0e1a;
+  --bg-card: #121026;
   --accent-cyan: #23e5d8;
   --accent-yellow: #ffb830;
   --accent-pink: #e892e8;
   --accent-coral: #ff497c;
-  --text-main: #ffffff;
+  --text-white: #ffffff;
 
   --font-display: "Bungee", "Rubik Mono One", system-ui, sans-serif;
   --font-hud: "Space Mono", "VT323", monospace;
-  --font-body: "Hanken Grotesk", system-ui, sans-serif;
+  --font-body: "Inter", system-ui, sans-serif;
   --card-bg: #f3c9e8;
   --card-text: #241a3d;
 }
@@ -27,7 +28,7 @@ body {
     radial-gradient(ellipse at 50% 0%, #241a3d 0%, transparent 55%),
     repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.025) 0px, rgba(255, 255, 255, 0.025) 1px, transparent 1px, transparent 3px),
     var(--bg-space);
-  color: var(--text-main);
+  color: var(--text-white);
   font-family: var(--font-body);
 }
 
@@ -61,12 +62,12 @@ body {
   font-family: var(--font-display);
   font-size: 1.1rem;
   color: var(--accent-yellow);
-  text-shadow: 2px 2px 0 var(--accent-coral), 4px 4px 0 rgba(0, 0, 0, 0.5);
+  text-shadow: 3px 3px 0px var(--accent-cyan), 6px 6px 0px var(--accent-yellow), 9px 9px 0px #000;
 }
 
 .node-detail p {
   margin: 0.35rem 0;
-  color: var(--text-main);
+  color: var(--text-white);
   font-size: 0.85rem;
 }
 
@@ -94,10 +95,10 @@ body {
   margin: 4rem auto;
   padding: 2.5rem 2rem;
   text-align: center;
-  background: rgba(14, 11, 22, 0.9);
+  background: var(--bg-card);
   border: 2px solid var(--accent-cyan);
-  border-radius: 14px;
-  box-shadow: 0 0 8px var(--accent-cyan), 0 0 40px rgba(35, 229, 216, 0.3), inset 0 0 30px rgba(35, 229, 216, 0.05);
+  border-radius: 16px;
+  box-shadow: 0 0 15px rgba(35, 229, 216, 0.3);
 }
 
 .settings-panel h1 {
@@ -106,12 +107,12 @@ body {
   font-size: 2.5rem;
   letter-spacing: 0.03em;
   color: var(--accent-yellow);
-  text-shadow: 3px 3px 0 var(--accent-coral), 6px 6px 0 rgba(0, 0, 0, 0.6);
+  text-shadow: 3px 3px 0px var(--accent-cyan), 6px 6px 0px var(--accent-yellow), 9px 9px 0px #000;
 }
 
 .settings-panel p {
   font-family: var(--font-body);
-  color: var(--text-main);
+  color: var(--text-white);
   opacity: 0.85;
 }
 

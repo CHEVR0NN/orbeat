@@ -1,0 +1,14 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "overused-font",
+        "value": "inter",
+        "createdAt": "2026-08-10T09:34:13.424Z",
+        "reason": "User explicitly requested Inter for general UI in the Retro Cosmic Pop brief"
+      }
+    ]
+  }
+}

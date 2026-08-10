@@ -5,8 +5,7 @@
 }
 
 .taste-map-link {
-  stroke: var(--accent-cyan);
-  stroke-opacity: 0.3;
+  stroke: rgba(35, 229, 216, 0.4);
   stroke-width: 1;
 }
 

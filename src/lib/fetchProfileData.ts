@@ -14,17 +14,18 @@ export async function fetchProfileData(
   fetchers: ProfileFetchers = DEFAULT_FETCHERS,
   forceRefresh = false
 ): Promise<ProfileDataBundle> {
-  const { data: profile } = await getCachedOrFetch(
-    cacheKey("userProfile", settings.username),
-    () => fetchers.getUserInfo(settings.apiKey, settings.username),
-    forceRefresh
-  );
-
-  const { data: albums } = await getCachedOrFetch(
-    cacheKey("topAlbums", settings.username),
-    () => fetchers.getTopAlbums(settings.apiKey, settings.username, 1),
-    forceRefresh
-  );
+  const [{ data: profile }, { data: albums }] = await Promise.all([
+    getCachedOrFetch(
+      cacheKey("userProfile", settings.username),
+      () => fetchers.getUserInfo(settings.apiKey, settings.username),
+      forceRefresh
+    ),
+    getCachedOrFetch(
+      cacheKey("topAlbums", settings.username),
+      () => fetchers.getTopAlbums(settings.apiKey, settings.username, 1),
+      forceRefresh
+    ),
+  ]);
 
   return { profile, topAlbum: albums[0] ?? null };
 }

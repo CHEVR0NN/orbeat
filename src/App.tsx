@@ -3,6 +3,7 @@ import SettingsPanel from "./components/SettingsPanel";
 import TasteMap from "./components/TasteMap";
 import ProfileCard from "./components/ProfileCard";
 import LoadingAstronaut from "./components/LoadingAstronaut";
+import FloatingDecor from "./components/FloatingDecor";
 import { readSettings, clearSettings } from "./lib/settings";
 import { fetchGraphData } from "./lib/fetchGraphData";
 import { fetchProfileData } from "./lib/fetchProfileData";
@@ -102,7 +103,12 @@ export default function App() {
   }
 
   if (!settings) {
-    return <SettingsPanel onSaved={setSettings} />;
+    return (
+      <>
+        <FloatingDecor />
+        <SettingsPanel onSaved={setSettings} />
+      </>
+    );
   }
 
   if (loadState.status === "loading") {
@@ -119,6 +125,7 @@ export default function App() {
 
   return (
     <div className="app-shell-layout">
+      <FloatingDecor />
       <ProfileCard
         username={profile?.name || settings.username}
         avatarUrl={profile?.image ?? null}

@@ -1,0 +1,107 @@
+.floating-decor {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.floating-decor-icon {
+  position: absolute;
+  pointer-events: none;
+  opacity: 0.55;
+}
+
+@keyframes float {
+  from {
+    transform: translateY(-10px);
+  }
+
+  to {
+    transform: translateY(10px);
+  }
+}
+
+@keyframes slow-rotate {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pulse {
+  from {
+    opacity: 0.3;
+    transform: scale(0.92);
+  }
+
+  to {
+    opacity: 0.6;
+    transform: scale(1.05);
+  }
+}
+
+.decor-1 {
+  top: 5%;
+  left: 3%;
+  width: 34px;
+  height: 34px;
+  animation: float 10s ease-in-out infinite alternate;
+}
+
+.decor-2 {
+  top: 6%;
+  right: 4%;
+  width: 40px;
+  height: 40px;
+  animation: slow-rotate 70s linear infinite;
+}
+
+.decor-3 {
+  bottom: 8%;
+  left: 4%;
+  width: 30px;
+  height: 30px;
+  animation: pulse 6s ease-in-out infinite alternate;
+}
+
+.decor-4 {
+  bottom: 6%;
+  right: 3%;
+  width: 26px;
+  height: 26px;
+  animation: pulse 5s ease-in-out infinite alternate, slow-rotate 50s linear infinite;
+}
+
+.decor-5 {
+  top: 45%;
+  left: 1.5%;
+  width: 36px;
+  height: 36px;
+  animation: slow-rotate 90s linear infinite;
+}
+
+.decor-6 {
+  top: 40%;
+  right: 2%;
+  width: 32px;
+  height: 32px;
+  animation: float 12s ease-in-out infinite alternate;
+}
+
+.decor-7 {
+  bottom: 3%;
+  left: 48%;
+  width: 24px;
+  height: 24px;
+  animation: pulse 8s ease-in-out infinite alternate;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .floating-decor-icon {
+    animation: none !important;
+  }
+}

@@ -78,7 +78,7 @@ export async function getUserInfo(apiKey: string, username: string): Promise<Use
   const json = await call({ method: "user.getinfo", user: username }, apiKey);
   const user = json.user ?? {};
   const images = user.image ?? [];
-  const largest = images.length > 0 ? images[images.length - 1]?.["#text"] : "";
+  const largest = images.find((i: any) => i.size === "extralarge")?.["#text"] ?? "";
   return {
     name: user.name ?? username,
     image: largest ? largest : null,

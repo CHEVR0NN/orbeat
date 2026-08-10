@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import SettingsPanel from "./components/SettingsPanel";
 import TasteMap from "./components/TasteMap";
 import ProfileCard from "./components/ProfileCard";
+import LoadingAstronaut from "./components/LoadingAstronaut";
 import { readSettings, clearSettings } from "./lib/settings";
 import { fetchGraphData } from "./lib/fetchGraphData";
 import { fetchProfileData } from "./lib/fetchProfileData";
@@ -105,7 +106,7 @@ export default function App() {
   }
 
   if (loadState.status === "loading") {
-    return <div className="status-message">Mapping {settings.username}'s taste...</div>;
+    return <LoadingAstronaut message={`Mapping ${settings.username}'s taste...`} />;
   }
 
   if (loadState.status === "error") {

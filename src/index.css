@@ -1,12 +1,6 @@
 @import url("https://fonts.googleapis.com/css2?family=Bungee&family=Rubik+Mono+One&family=Space+Mono:wght@400;700&family=VT323&family=Inter:wght@400;600;800&display=swap");
 
 :root {
-  --color-bg-inner: #1b1035;
-  --color-bg-outer: #05030d;
-  --color-core: #ffb454;
-  --color-candidate: #57d9d9;
-  --color-text: #f4f1ff;
-
   /* Retro Cosmic Pop / Y2K Space-Age palette */
   --bg-space: #0e0b16;
   --bg-space-dark: #0a0e1a;

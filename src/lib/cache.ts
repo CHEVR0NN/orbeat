@@ -27,6 +27,12 @@ export function isStale(entry: CacheEntry<unknown> | null, maxAgeMs = MAX_AGE_MS
   return Date.now() - entry.fetchedAt > maxAgeMs;
 }
 
+/**
+ * Reads a cache entry for `key`; if missing/stale (or `forceRefresh` is
+ * true), calls `fetchFn`, writes the result to cache, and returns it.
+ * `forceRefresh` skips the freshness check but still writes to cache —
+ * it does not disable caching.
+ */
 export async function getCachedOrFetch<T>(
   key: string,
   fetchFn: () => Promise<T>,

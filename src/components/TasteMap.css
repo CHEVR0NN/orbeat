@@ -1,31 +1,74 @@
+.taste-map-wrap {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
 .taste-map {
   width: 100%;
   height: 100%;
   display: block;
 }
 
-.taste-map-link {
-  stroke: rgba(35, 229, 216, 0.4);
-  stroke-width: 1;
+.taste-map-back-btn {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 2;
+  font-family: var(--font-hud);
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--accent-cyan);
+  background: rgba(14, 11, 22, 0.7);
+  border: 1px solid var(--accent-cyan);
+  border-radius: 4px;
+  padding: 4px 10px;
+  cursor: pointer;
+  transition: color 200ms ease, border-color 200ms ease, box-shadow 200ms ease;
+}
+
+.taste-map-back-btn:hover {
+  color: var(--accent-pink);
+  border-color: var(--accent-pink);
+  box-shadow: 0 0 8px var(--accent-pink);
 }
 
 .taste-map-node-core {
-  fill: var(--accent-cyan);
   stroke: var(--accent-coral);
   stroke-width: 2;
   cursor: grab;
-  filter: drop-shadow(0 0 6px var(--accent-cyan));
 }
 
 .taste-map-node-candidate {
-  fill: var(--accent-pink);
   stroke: var(--accent-cyan);
   stroke-width: 1;
   cursor: grab;
-  filter: drop-shadow(0 0 4px var(--accent-pink));
-  transition: opacity 200ms ease, filter 200ms ease;
 }
 
-.taste-map-node-candidate:hover {
-  filter: drop-shadow(0 0 10px var(--accent-cyan));
+.taste-map-node-ring {
+  fill: none;
+  stroke: var(--accent-coral);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 6;
+  opacity: 0.35;
+  animation: taste-map-ring-pulse 4s ease-in-out infinite;
+}
+
+@keyframes taste-map-ring-pulse {
+  0%,
+  100% {
+    opacity: 0.2;
+    stroke-dashoffset: 0;
+  }
+  50% {
+    opacity: 0.5;
+    stroke-dashoffset: 20;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .taste-map-node-ring {
+    animation: none;
+  }
 }

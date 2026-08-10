@@ -80,6 +80,7 @@ export interface ProfileDataBundle {
 export interface NowPlayingTrack {
   name: string;
   artist: string;
+  album: string | null;
   nowPlaying: boolean;
 }
 

@@ -113,6 +113,7 @@ export async function getRecentTracks(
   return tracks.map((t: any) => ({
     name: t.name,
     artist: t.artist?.["#text"] ?? "",
+    album: t.album?.["#text"] || null,
     nowPlaying: t["@attr"]?.nowplaying === "true",
   }));
 }

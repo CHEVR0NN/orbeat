@@ -1,4 +1,5 @@
-import { Radio } from "lucide-react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { Radio, MoonStar, Star } from "lucide-react";
 import type { NowPlayingTrack, GenreCount } from "../types";
 
 interface ProfileCardProps {
@@ -16,6 +17,20 @@ interface ProfileCardProps {
 }
 
 const SECTORS = ["SECTOR 7-G", "SECTOR 12-B", "SECTOR 3-K", "SECTOR 9-R"];
+
+// Measures whether a piece of text overflows its container so the marquee
+// animation only activates when the text genuinely doesn't fit.
+function useMarqueeOverflow(text: string) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const [overflowPx, setOverflowPx] = useState(0);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || !el.parentElement) return;
+    const diff = el.scrollWidth - el.parentElement.clientWidth;
+    setOverflowPx(diff > 0 ? diff : 0);
+  }, [text]);
+  return { ref, overflowPx };
+}
 
 // Deterministic per-username ID/sector: same username always maps to the
 // same values, no randomness.
@@ -50,20 +65,22 @@ export default function ProfileCard({
     today.getDate()
   ).padStart(2, "0")}`;
 
+  const trackText = nowPlaying ? `${nowPlaying.name} — ${nowPlaying.artist}` : "Standby";
+  const albumText = nowPlaying?.album ?? "";
+  const trackMarquee = useMarqueeOverflow(trackText);
+  const albumMarquee = useMarqueeOverflow(albumText);
+
   return (
     <aside className="profile-card">
       <div className="profile-card-topstrip" aria-hidden="true" />
 
       {/* 1. Identity band */}
       <div className="profile-card-identity">
-        {avatarUrl ? (
-          <img className="profile-card-avatar" src={avatarUrl} alt="" />
-        ) : (
-          <div className="profile-card-avatar profile-card-avatar-placeholder" aria-hidden="true">
-            👽
-          </div>
-        )}
-        <div className="profile-card-identity-text">
+        <div className="profile-card-decor" aria-hidden="true">
+          <MoonStar className="profile-card-decor-icon profile-card-decor-1" size={18} style={{ color: "var(--accent-cyan)" }} />
+          <Star className="profile-card-decor-icon profile-card-decor-2" size={16} style={{ color: "var(--accent-yellow)" }} />
+        </div>
+        <div className="profile-card-identity-header">
           <span className="profile-card-species-label">[Species identified]</span>
           <div className="profile-card-stamp-wrap">
             <span className="profile-card-stamp">{username}</span>
@@ -71,20 +88,58 @@ export default function ProfileCard({
               ✓
             </span>
           </div>
-          <span className="profile-card-identity-meta">System ID: {systemId}</span>
-          <span className="profile-card-identity-meta">License No: {licenseNo}</span>
-          <span className="profile-card-identity-meta">Sector: {sector}</span>
+        </div>
+        <div className="profile-card-id-card">
+          {avatarUrl ? (
+            <img className="profile-card-avatar" src={avatarUrl} alt="" />
+          ) : (
+            <div className="profile-card-avatar profile-card-avatar-placeholder" aria-hidden="true">
+              👽
+            </div>
+          )}
+          <div className="profile-card-id-fields">
+            <div className="profile-card-id-field">
+              <span className="profile-card-id-label">System ID</span>
+              <span className="profile-card-id-value">{systemId}</span>
+            </div>
+            <div className="profile-card-id-field">
+              <span className="profile-card-id-label">License No</span>
+              <span className="profile-card-id-value">{licenseNo}</span>
+            </div>
+            <div className="profile-card-id-field">
+              <span className="profile-card-id-label">Sector</span>
+              <span className="profile-card-id-value">{sector}</span>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* 2. Now-scrobbling band */}
       <div className={`profile-card-now-playing${nowPlaying ? "" : " is-standby"}`}>
+        <span className="profile-card-now-playing-title">{nowPlaying ? "On Air" : "Standby"}</span>
         <div className="profile-card-now-playing-track">
           <Radio className="profile-card-now-playing-icon" size={16} aria-hidden="true" />
-          <span className="profile-card-now-playing-text">
-            {nowPlaying ? `[Live frequency] ${nowPlaying.name} — ${nowPlaying.artist}` : "[No signal] Standby"}
+          <span className="profile-card-now-playing-textwrap">
+            <span
+              ref={trackMarquee.ref}
+              className={`profile-card-now-playing-text${trackMarquee.overflowPx > 0 ? " is-marquee" : ""}`}
+              style={trackMarquee.overflowPx > 0 ? ({ "--marquee-distance": `${trackMarquee.overflowPx}px` } as CSSProperties) : undefined}
+            >
+              {trackText}
+            </span>
           </span>
         </div>
+        {albumText && (
+          <span className="profile-card-now-playing-textwrap profile-card-now-playing-album">
+            <span
+              ref={albumMarquee.ref}
+              className={`profile-card-now-playing-text${albumMarquee.overflowPx > 0 ? " is-marquee" : ""}`}
+              style={albumMarquee.overflowPx > 0 ? ({ "--marquee-distance": `${albumMarquee.overflowPx}px` } as CSSProperties) : undefined}
+            >
+              {albumText}
+            </span>
+          </span>
+        )}
         <span className="profile-card-now-playing-signal">
           Signal: 108.4 MHz // {nowPlaying ? "Audio freq active" : "Awaiting feed"}
         </span>

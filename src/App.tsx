@@ -63,6 +63,9 @@ export default function App() {
               : `Because you listen to ${selected.sourceCoreArtist}`}
           </p>
           <p>{selected.listeners.toLocaleString()} listeners</p>
+          {selected.match !== undefined && (
+            <p>{Math.round(selected.match * 100)}% similar</p>
+          )}
           <button onClick={() => setSelected(null)}>Close</button>
         </aside>
       )}

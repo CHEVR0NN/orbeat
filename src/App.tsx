@@ -8,8 +8,17 @@ import { readSettings, clearSettings } from "./lib/settings";
 import { fetchGraphData } from "./lib/fetchGraphData";
 import { fetchProfileData } from "./lib/fetchProfileData";
 import { buildGraph } from "./lib/graph";
-import { topGenre } from "./lib/profileStats";
-import type { Settings, Graph, GraphNode, UserProfile, TopAlbum } from "./types";
+import { topGenre, topGenres } from "./lib/profileStats";
+import { getRecentTracks } from "./lib/lastfm";
+import type {
+  Settings,
+  Graph,
+  GraphNode,
+  UserProfile,
+  TopAlbum,
+  NowPlayingTrack,
+  GenreCount,
+} from "./types";
 
 type LoadState =
   | { status: "loading" }
@@ -19,6 +28,7 @@ type LoadState =
       graph: Graph;
       topArtistName: string | null;
       topGenreName: string | null;
+      topGenres: GenreCount[];
     };
 
 export default function App() {
@@ -28,6 +38,7 @@ export default function App() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [topAlbum, setTopAlbum] = useState<TopAlbum | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [nowPlaying, setNowPlaying] = useState<NowPlayingTrack | null>(null);
 
   useEffect(() => {
     if (!settings) return;
@@ -42,6 +53,7 @@ export default function App() {
           graph: buildGraph(bundle),
           topArtistName: bundle.core[0]?.name ?? null,
           topGenreName: topGenre(bundle.tagsByArtist),
+          topGenres: topGenres(bundle.tagsByArtist),
         });
       })
       .catch((err: unknown) => {
@@ -67,6 +79,32 @@ export default function App() {
     };
   }, [settings]);
 
+  useEffect(() => {
+    if (!settings) return;
+    let cancelled = false;
+
+    function poll() {
+      if (!settings) return;
+      getRecentTracks(settings.apiKey, settings.username)
+        .then((tracks) => {
+          if (cancelled) return;
+          const current = tracks[0];
+          setNowPlaying(current?.nowPlaying ? current : null);
+        })
+        .catch(() => {
+          // live poll — swallow errors and leave nowPlaying as-is
+        });
+    }
+
+    poll();
+    const interval = setInterval(poll, 15000);
+
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [settings]);
+
   async function handleRefresh() {
     if (!settings) return;
     setRefreshing(true);
@@ -80,6 +118,7 @@ export default function App() {
         graph: buildGraph(bundle),
         topArtistName: bundle.core[0]?.name ?? null,
         topGenreName: topGenre(bundle.tagsByArtist),
+        topGenres: topGenres(bundle.tagsByArtist),
       });
       if (profileBundle) {
         setProfile(profileBundle.profile);
@@ -133,6 +172,8 @@ export default function App() {
         topAlbumName={topAlbum?.name ?? null}
         totalScrobbles={profile?.playcount ?? null}
         topGenreName={loadState.topGenreName}
+        nowPlaying={nowPlaying}
+        topGenres={loadState.topGenres}
         onRefresh={handleRefresh}
         onChangeAccount={handleChangeAccount}
         refreshing={refreshing}

@@ -76,3 +76,14 @@ export interface ProfileDataBundle {
   profile: UserProfile;
   topAlbum: TopAlbum | null;
 }
+
+export interface NowPlayingTrack {
+  name: string;
+  artist: string;
+  nowPlaying: boolean;
+}
+
+export interface GenreCount {
+  name: string;
+  count: number;
+}

@@ -6,6 +6,7 @@ import type {
   ArtistInfo,
   UserProfile,
   TopAlbum,
+  NowPlayingTrack,
 } from "../types";
 
 const BASE_URL = "https://ws.audioscrobbler.com/2.0/";
@@ -97,4 +98,21 @@ export async function getTopAlbums(
   );
   const albums = json.topalbums?.album ?? [];
   return albums.map((a: any) => ({ name: a.name, artist: a.artist?.name ?? "" }));
+}
+
+export async function getRecentTracks(
+  apiKey: string,
+  username: string,
+  limit = 1
+): Promise<NowPlayingTrack[]> {
+  const json = await call(
+    { method: "user.getrecenttracks", user: username, limit: String(limit) },
+    apiKey
+  );
+  const tracks = json.recenttracks?.track ?? [];
+  return tracks.map((t: any) => ({
+    name: t.name,
+    artist: t.artist?.["#text"] ?? "",
+    nowPlaying: t["@attr"]?.nowplaying === "true",
+  }));
 }

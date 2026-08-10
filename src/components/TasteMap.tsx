@@ -44,6 +44,7 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
   const [nodes, setNodes] = useState<SimNode[]>([]);
   const [links, setLinks] = useState<SimLink[]>([]);
   const draggingId = useRef<string | null>(null);
+  const simulationRef = useRef<ReturnType<typeof forceSimulation<SimNode>> | null>(null);
 
   useEffect(() => {
     const simNodes: SimNode[] = graph.nodes.map((n) => ({ ...n }));
@@ -63,6 +64,8 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
       .force("collide", forceCollide<SimNode>((d) => radiusFor(d) + 6))
       .force("center", forceCenter(WIDTH / 2, HEIGHT / 2));
 
+    simulationRef.current = simulation;
+
     simulation.on("tick", () => {
       setNodes([...simNodes]);
       setLinks([...simLinks]);
@@ -77,6 +80,7 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
     draggingId.current = node.id;
     node.fx = node.x;
     node.fy = node.y;
+    simulationRef.current?.alphaTarget(0.3).restart();
   }
 
   function handlePointerMove(e: PointerEvent<SVGSVGElement>) {
@@ -96,6 +100,7 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
       node.fy = null;
     }
     draggingId.current = null;
+    simulationRef.current?.alphaTarget(0);
   }
 
   return (

@@ -71,3 +71,8 @@ export interface TopAlbum {
   name: string;
   artist: string;
 }
+
+export interface ProfileDataBundle {
+  profile: UserProfile;
+  topAlbum: TopAlbum | null;
+}

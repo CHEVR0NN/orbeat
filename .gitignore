@@ -1,3 +1,7 @@
 node_modules
 dist
 *.local
+tsconfig.tsbuildinfo
+tsconfig.node.tsbuildinfo
+vite.config.js
+vite.config.d.ts

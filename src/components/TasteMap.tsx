@@ -37,6 +37,7 @@ const CANDIDATE_COLOR_CYCLE = [
   { gradientId: "taste-map-node-candidate-fill", accentVar: "var(--accent-pink)" },
   { gradientId: "taste-map-node-candidate-fill-yellow", accentVar: "var(--accent-yellow)" },
   { gradientId: "taste-map-node-candidate-fill-coral", accentVar: "var(--accent-coral)" },
+  { gradientId: "taste-map-node-candidate-fill-teal", accentVar: "var(--accent-cyan)" },
 ];
 
 function lerp(min: number, max: number, t: number): number {
@@ -62,6 +63,10 @@ function orbitPosition(ringIndex: number): { px: number; py: number } {
     px: orbitRx(ringIndex) * Math.cos(angleRad),
     py: orbitRy(ringIndex) * Math.sin(angleRad),
   };
+}
+
+function sizeJitter(ringIndex: number): number {
+  return ((ringIndex * 37) % 9) - 4;
 }
 
 function radiusFor(node: GraphNode): number {
@@ -216,7 +221,8 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
         .map((node) => {
           const ringIndex = ringIndexById.get(node.id)!;
           const { px, py } = orbitPosition(ringIndex);
-          const color = CANDIDATE_COLOR_CYCLE[ringIndex % 3];
+          const color = CANDIDATE_COLOR_CYCLE[ringIndex % 4];
+          const style = ringIndex % 3;
           return {
             node,
             ringIndex,
@@ -224,9 +230,11 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
             ry: orbitRy(ringIndex),
             px,
             py,
+            displayRadius: Math.max(4, radiusFor(node) + sizeJitter(ringIndex)),
             gradientId: color.gradientId,
             accentVar: color.accentVar,
-            hasAccessory: ringIndex % 3 === 2,
+            hasAccessory: style === 1,
+            hasMoon: style === 2,
           };
         })
         .sort((a, b) => a.ringIndex - b.ringIndex)
@@ -265,6 +273,10 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
           </radialGradient>
           <radialGradient id="taste-map-node-candidate-fill-coral" cx="35%" cy="30%" r="70%">
             <stop offset="0%" stopColor="var(--accent-coral)" />
+            <stop offset="100%" stopColor="var(--bg-space-dark)" />
+          </radialGradient>
+          <radialGradient id="taste-map-node-candidate-fill-teal" cx="35%" cy="30%" r="70%">
+            <stop offset="0%" stopColor="color-mix(in srgb, var(--accent-cyan) 55%, var(--bg-space-dark))" />
             <stop offset="100%" stopColor="var(--bg-space-dark)" />
           </radialGradient>
           <filter id="taste-map-glow-core" x="-100%" y="-100%" width="300%" height="300%">
@@ -334,7 +346,7 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
                   pointerEvents="none"
                 />
               ))}
-              {orbitPlanets.map(({ node, px, py, gradientId, accentVar, hasAccessory }) => (
+              {orbitPlanets.map(({ node, px, py, displayRadius, gradientId, accentVar, hasAccessory, hasMoon }) => (
                 <g key={`planet-${node.id}`}>
                   {hasAccessory && (
                     <g transform={`translate(${px}, ${py}) rotate(25)`}>
@@ -351,10 +363,19 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
                       />
                     </g>
                   )}
+                  {hasMoon && (
+                    <circle
+                      cx={px + radiusFor(node) * 1.6}
+                      cy={py - radiusFor(node) * 1.1}
+                      r={radiusFor(node) * 0.28}
+                      fill={`url(#${gradientId})`}
+                      pointerEvents="none"
+                    />
+                  )}
                   <circle
                     cx={px}
                     cy={py}
-                    r={radiusFor(node)}
+                    r={displayRadius}
                     className="taste-map-node-candidate"
                     fill={`url(#${gradientId})`}
                     filter="url(#taste-map-glow-candidate)"

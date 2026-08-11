@@ -36,9 +36,23 @@
   box-shadow: 2px 2px 0px var(--accent-pink), 4px 4px 0px rgba(0, 0, 0, 0.6);
 }
 
+.taste-map-radar-ring {
+  stroke: var(--accent-cyan);
+  stroke-width: 1;
+  stroke-dasharray: 2 6;
+  opacity: 0.18;
+}
+
+.taste-map-radar-crosshair {
+  stroke: var(--accent-cyan);
+  stroke-width: 1;
+  stroke-dasharray: 2 6;
+  opacity: 0.14;
+}
+
 .taste-map-node-core {
   stroke: var(--accent-coral);
-  stroke-width: 2;
+  stroke-width: 3;
   cursor: grab;
 }
 
@@ -121,6 +135,72 @@
 
 @media (prefers-reduced-motion: reduce) {
   .taste-map-node-pulse {
+    animation: none;
+  }
+}
+
+.taste-map-decor {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.taste-map-decor-icon {
+  position: absolute;
+  opacity: 0.45;
+}
+
+.taste-map-decor-1 {
+  top: 8%;
+  right: 8%;
+  width: 22px;
+  height: 22px;
+  color: var(--accent-yellow);
+  animation: taste-map-decor-pulse 6s ease-in-out infinite alternate;
+}
+
+.taste-map-decor-2 {
+  bottom: 10%;
+  left: 10%;
+  width: 20px;
+  height: 20px;
+  color: var(--accent-cyan);
+  animation: taste-map-decor-float 8s ease-in-out infinite alternate;
+}
+
+.taste-map-decor-3 {
+  top: 10%;
+  left: 6%;
+  width: 26px;
+  height: 26px;
+  color: var(--accent-pink);
+  animation: taste-map-decor-float 11s ease-in-out infinite alternate;
+}
+
+@keyframes taste-map-decor-float {
+  from {
+    transform: translateY(-6px);
+  }
+  to {
+    transform: translateY(6px);
+  }
+}
+
+@keyframes taste-map-decor-pulse {
+  from {
+    opacity: 0.3;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 0.55;
+    transform: scale(1.05);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .taste-map-decor-icon {
     animation: none;
   }
 }

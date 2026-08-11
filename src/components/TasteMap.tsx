@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type MouseEvent, type PointerEvent } from "react";
+import { Star, Zap } from "lucide-react";
 import {
   forceSimulation,
   forceManyBody,
@@ -366,6 +367,20 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
           &larr; back to galaxies
         </button>
       )}
+      <div className="taste-map-decor" aria-hidden="true">
+        <Star className="taste-map-decor-icon taste-map-decor-1" />
+        <Zap className="taste-map-decor-icon taste-map-decor-2" />
+        <svg
+          className="taste-map-decor-icon taste-map-decor-3"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+        >
+          <ellipse cx="12" cy="15" rx="10" ry="3.5" />
+          <path d="M6 14 C6 8, 18 8, 18 14" />
+        </svg>
+      </div>
       <svg
         className="taste-map"
         viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
@@ -377,10 +392,6 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
           <radialGradient id="taste-map-bg" cx="50%" cy="45%" r="75%">
             <stop offset="0%" stopColor="#241a3d" />
             <stop offset="100%" stopColor="var(--bg-space)" />
-          </radialGradient>
-          <radialGradient id="taste-map-node-core-fill" cx="35%" cy="30%" r="70%">
-            <stop offset="0%" stopColor="var(--accent-cyan)" />
-            <stop offset="100%" stopColor="var(--bg-space-dark)" />
           </radialGradient>
           <radialGradient id="taste-map-node-candidate-fill" cx="35%" cy="30%" r="70%">
             <stop offset="0%" stopColor="var(--accent-pink)" />
@@ -399,7 +410,7 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
             <stop offset="100%" stopColor="var(--bg-space-dark)" />
           </radialGradient>
           <filter id="taste-map-glow-core" x="-100%" y="-100%" width="300%" height="300%">
-            <feGaussianBlur in="SourceGraphic" stdDeviation="4.5" result="blur" />
+            <feGaussianBlur in="SourceGraphic" stdDeviation="1.4" result="blur" />
             <feMerge>
               <feMergeNode in="blur" />
               <feMergeNode in="SourceGraphic" />
@@ -439,6 +450,14 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
           fill="url(#taste-map-bg)"
           onClick={() => setZoomedGalaxyId(null)}
         />
+        <g className="taste-map-radar-grid" pointerEvents="none">
+          <circle cx={WIDTH / 2} cy={HEIGHT / 2} r={60} fill="none" className="taste-map-radar-ring" />
+          <circle cx={WIDTH / 2} cy={HEIGHT / 2} r={140} fill="none" className="taste-map-radar-ring" />
+          <circle cx={WIDTH / 2} cy={HEIGHT / 2} r={220} fill="none" className="taste-map-radar-ring" />
+          <circle cx={WIDTH / 2} cy={HEIGHT / 2} r={300} fill="none" className="taste-map-radar-ring" />
+          <line x1={0} y1={HEIGHT / 2} x2={WIDTH} y2={HEIGHT / 2} className="taste-map-radar-crosshair" />
+          <line x1={WIDTH / 2} y1={0} x2={WIDTH / 2} y2={HEIGHT} className="taste-map-radar-crosshair" />
+        </g>
         <g style={sceneStyle}>
           {nodes
             .filter((node) => node.kind === "core")
@@ -492,11 +511,12 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
                     cy={node.y}
                     r={r}
                     className="taste-map-node-core"
-                    fill="url(#taste-map-node-core-fill)"
+                    fill={`url(#${CANDIDATE_COLOR_CYCLE[rank % 4].gradientId})`}
                     filter="url(#taste-map-glow-core)"
                     style={{
                       opacity: opacityFor(node),
                       pointerEvents: "auto",
+                      stroke: CANDIDATE_COLOR_CYCLE[rank % 4].accentVar,
                       transition: "opacity 350ms ease, filter 200ms ease",
                     }}
                     onPointerDown={() => handlePointerDown(node)}

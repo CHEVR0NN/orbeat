@@ -678,10 +678,6 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
               <stop offset="100%" stopColor={color} stopOpacity={0} />
             </radialGradient>
           ))}
-          <radialGradient id="taste-map-vinyl-aura-grad" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor={VINYL_LABEL_FILL} stopOpacity={0.55} />
-            <stop offset="100%" stopColor={VINYL_LABEL_FILL} stopOpacity={0} />
-          </radialGradient>
           <filter id="taste-map-glow-blur" x="-60%" y="-60%" width="220%" height="220%">
             <feGaussianBlur stdDeviation="6" />
           </filter>
@@ -811,10 +807,6 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
                 const centerSquashStyle: CSSProperties | undefined = isZoomedCenter
                   ? { transform: `rotateX(${VINYL_TILT_DEG}deg)`, transformOrigin: "0px 0px" }
                   : undefined;
-                const glowColor = isZoomedCenter ? VINYL_LABEL_FILL : auraColor;
-                const glowFillUrl = isZoomedCenter
-                  ? "url(#taste-map-vinyl-aura-grad)"
-                  : `url(#${AURA_GRADIENT_IDS[rank % AURA_GRADIENT_IDS.length]})`;
                 return (
                   <g
                     key={node.id}
@@ -829,7 +821,7 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
                       cx={0}
                       cy={0}
                       r={r + 16 + (galaxySeed(node.id) % 14)}
-                      fill={glowFillUrl}
+                      fill={`url(#${AURA_GRADIENT_IDS[rank % AURA_GRADIENT_IDS.length]})`}
                       filter="url(#taste-map-glow-blur)"
                       pointerEvents="none"
                       style={{
@@ -845,8 +837,8 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
                       cx={0}
                       cy={0}
                       r={r * 1.4}
-                      fill={glowFillUrl}
-                      style={{ filter: `drop-shadow(0 0 16px ${glowColor})`, ...centerSquashStyle }}
+                      fill={`url(#${AURA_GRADIENT_IDS[rank % AURA_GRADIENT_IDS.length]})`}
+                      style={{ filter: `drop-shadow(0 0 16px ${auraColor})`, ...centerSquashStyle }}
                       pointerEvents="none"
                     />
                     <g
@@ -859,7 +851,7 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
                           cx={0}
                           cy={0}
                           r={r}
-                          color={glowColor}
+                          color={VINYL_LABEL_FILL}
                           className="taste-map-node-core"
                           style={{ opacity: opacityFor(node) * depthOpacity, pointerEvents: "auto", transition: "opacity 350ms ease", ...centerSquashStyle }}
                           title={node.id}
@@ -876,7 +868,7 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
                           title={node.id}
                         />
                       )}
-                      <NodeLabel cx={0} cy={r + 24} text={node.id} color={glowColor} />
+                      <NodeLabel cx={0} cy={-(r + 42)} text={node.id} color={auraColor} />
                     </g>
                   </g>
                 );

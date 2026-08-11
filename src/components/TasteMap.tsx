@@ -293,6 +293,14 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
               <feMergeNode in="SourceGraphic" />
             </feMerge>
           </filter>
+          <radialGradient id="taste-map-galaxy-haze" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="rgba(35, 229, 216, 0.35)" />
+            <stop offset="60%" stopColor="rgba(232, 146, 232, 0.12)" />
+            <stop offset="100%" stopColor="rgba(35, 229, 216, 0)" />
+          </radialGradient>
+          <filter id="taste-map-galaxy-haze-blur" x="-60%" y="-60%" width="220%" height="220%">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="6" />
+          </filter>
         </defs>
         <rect
           x={0}
@@ -307,6 +315,39 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
             .filter((node) => node.kind === "core")
             .map((node) => (
               <g key={node.id}>
+                <ellipse
+                  cx={node.x}
+                  cy={node.y}
+                  rx={radiusFor(node) * 2.6}
+                  ry={radiusFor(node) * 1.1}
+                  transform={`rotate(-20 ${node.x} ${node.y})`}
+                  fill="url(#taste-map-galaxy-haze)"
+                  filter="url(#taste-map-galaxy-haze-blur)"
+                  opacity={0.5}
+                  pointerEvents="none"
+                />
+                <ellipse
+                  cx={node.x}
+                  cy={node.y}
+                  rx={radiusFor(node) * 1.9}
+                  ry={radiusFor(node) * 0.7}
+                  transform={`rotate(15 ${node.x} ${node.y})`}
+                  fill="url(#taste-map-galaxy-haze)"
+                  filter="url(#taste-map-galaxy-haze-blur)"
+                  opacity={0.3}
+                  pointerEvents="none"
+                />
+                <ellipse
+                  cx={node.x}
+                  cy={node.y}
+                  rx={radiusFor(node) * 1.5}
+                  ry={radiusFor(node) * 0.5}
+                  transform={`rotate(-50 ${node.x} ${node.y})`}
+                  fill="url(#taste-map-galaxy-haze)"
+                  filter="url(#taste-map-galaxy-haze-blur)"
+                  opacity={0.25}
+                  pointerEvents="none"
+                />
                 <circle
                   className="taste-map-node-ring"
                   cx={node.x}

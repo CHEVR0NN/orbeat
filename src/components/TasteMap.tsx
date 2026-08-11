@@ -29,6 +29,20 @@ const GROOVE_RADII = Array.from({ length: GROOVE_RING_COUNT }, (_, i) => {
   return GROOVE_MIN_RADIUS + (GROOVE_MAX_RADIUS - GROOVE_MIN_RADIUS) * Math.pow(t, 1.4);
 });
 
+// Purely-decorative filler grooves layered on top of GROOVE_RADII for a
+// denser, more physical vinyl-texture look. Not used for node positioning.
+const VINYL_FILLER_GROOVE_COUNT = 40;
+const VINYL_FILLER_GROOVE_MIN_RADIUS = 40;
+const VINYL_FILLER_GROOVE_MAX_RADIUS = VINYL_DISC_RADIUS - 10;
+const VINYL_FILLER_GROOVE_RADII = Array.from({ length: VINYL_FILLER_GROOVE_COUNT }, (_, i) => {
+  const t = i / (VINYL_FILLER_GROOVE_COUNT - 1);
+  return VINYL_FILLER_GROOVE_MIN_RADIUS + (VINYL_FILLER_GROOVE_MAX_RADIUS - VINYL_FILLER_GROOVE_MIN_RADIUS) * t;
+});
+
+const VINYL_LABEL_RADIUS = 80;
+const VINYL_LABEL_FILL = "#E0533C";
+const VINYL_SPINDLE_FILL = "#000000";
+
 const ORBIT_DURATION_MIN_S = 24;
 const ORBIT_DURATION_MAX_S = 110;
 
@@ -553,6 +567,16 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
                 className="taste-map-vinyl-disc"
                 pointerEvents="none"
               />
+              {VINYL_FILLER_GROOVE_RADII.map((r) => (
+                <circle
+                  key={`groove-filler-${r}`}
+                  cx={WIDTH / 2}
+                  cy={HEIGHT / 2}
+                  r={r}
+                  className="taste-map-vinyl-groove"
+                  pointerEvents="none"
+                />
+              ))}
               {GROOVE_RADII.map((r) => (
                 <circle
                   key={`groove-${r}`}
@@ -563,6 +587,12 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
                   pointerEvents="none"
                 />
               ))}
+              {!zoomedGalaxyId && (
+                <g pointerEvents="none">
+                  <circle cx={WIDTH / 2} cy={HEIGHT / 2} r={VINYL_LABEL_RADIUS} fill={VINYL_LABEL_FILL} />
+                  <circle cx={WIDTH / 2} cy={HEIGHT / 2} r={VINYL_LABEL_RADIUS * 0.18} fill={VINYL_SPINDLE_FILL} />
+                </g>
+              )}
             </g>
           </g>
           <g className="taste-map-nodes-layer">
@@ -648,7 +678,7 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
                       cy={node.y}
                       r={r * 1.4}
                       fill={`url(#${AURA_GRADIENT_IDS[rank % AURA_GRADIENT_IDS.length]})`}
-                      style={{ filter: `drop-shadow(0 0 12px ${auraColor})` }}
+                      style={{ filter: `drop-shadow(0 0 16px ${auraColor})` }}
                       pointerEvents="none"
                     />
                     <g onClick={(e) => handleCoreClick(e, node)}>

@@ -51,7 +51,7 @@
 }
 
 .taste-map-vinyl-tilt {
-  transform: perspective(800px) rotateX(45deg);
+  transform: perspective(1000px) rotateX(60deg);
 }
 
 .taste-map-vinyl-spin {
@@ -74,14 +74,13 @@
 }
 
 .taste-map-vinyl-disc {
-  fill: #120f24;
+  fill: #1c1a24;
 }
 
 .taste-map-vinyl-groove {
   fill: none;
-  stroke: rgba(35, 229, 216, 0.25);
+  stroke: rgba(255, 255, 255, 0.08);
   stroke-width: 1;
-  stroke-dasharray: 2 4;
 }
 
 .taste-map-tonearm {

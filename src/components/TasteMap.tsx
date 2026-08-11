@@ -58,6 +58,7 @@ const ORBIT_GOLDEN_ANGLE_DEG = 137.5;
 const ORBIT_TARGET_HALF_WIDTH = 320;
 const ORBIT_SCALE_MIN = 1.4;
 const ORBIT_SCALE_MAX = 3.4;
+const ORBIT_AUTO_SPIN_BASE_DEG_PER_SEC = 14;
 
 const CANDIDATE_COLOR_CYCLE = [
   { gradientId: "taste-map-node-candidate-fill", accentVar: "var(--accent-pink)" },
@@ -98,6 +99,12 @@ function sizeJitter(ringIndex: number): number {
 function radiusFor(node: GraphNode): number {
   if (node.kind === "core") return MAX_RADIUS;
   return lerp(MIN_RADIUS, MAX_RADIUS, Math.sqrt(node.relevance));
+}
+
+function coreRadiusFor(rank: number, coreCount: number): number {
+  if (coreCount <= 1) return 32;
+  const t = rank / (coreCount - 1);
+  return lerp(34, 24, t);
 }
 
 function opacityFor(node: GraphNode): number {
@@ -141,6 +148,12 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
     const coreId = node.kind === "core" ? node.id : node.sourceCoreArtist;
     return galaxyAnchors.get(coreId ?? "") ?? { x: WIDTH / 2, y: HEIGHT / 2 };
   }
+
+  const coreRankById = useMemo(() => {
+    const map = new Map<string, number>();
+    graph.nodes.filter((n) => n.kind === "core").forEach((n, i) => map.set(n.id, i));
+    return map;
+  }, [graph]);
 
   const ringIndexById = useMemo(() => {
     const map = new Map<string, number>();
@@ -271,6 +284,37 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
     draggingOrbitId.current = node.id;
   }
 
+  useEffect(() => {
+    if (!zoomedGalaxyId || ringIndexById.size === 0) return;
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduceMotion) return;
+
+    let rafId: number;
+    let lastTime: number | null = null;
+
+    function tick(time: number) {
+      if (lastTime === null) lastTime = time;
+      const deltaSeconds = (time - lastTime) / 1000;
+      lastTime = time;
+
+      setOrbitAngleOverrides((prev) => {
+        const next = new Map(prev);
+        ringIndexById.forEach((ringIndex, nodeId) => {
+          if (draggingOrbitId.current === nodeId) return;
+          const speed = ORBIT_AUTO_SPIN_BASE_DEG_PER_SEC / (1 + ringIndex * 0.4);
+          const current = next.get(nodeId) ?? (ringIndex * ORBIT_GOLDEN_ANGLE_DEG) % 360;
+          next.set(nodeId, (current + speed * deltaSeconds) % 360);
+        });
+        return next;
+      });
+
+      rafId = requestAnimationFrame(tick);
+    }
+
+    rafId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafId);
+  }, [zoomedGalaxyId, ringIndexById]);
+
   const zoomedAnchor = zoomedGalaxyId ? galaxyAnchors.get(zoomedGalaxyId) ?? null : null;
   const visibleCount = ringIndexById.size;
   const maxOrbitRx = visibleCount > 0 ? ORBIT_INNER_RX + (visibleCount - 1) * ORBIT_RING_STEP_RX : ORBIT_INNER_RX;
@@ -304,7 +348,7 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
             gradientId: color.gradientId,
             accentVar: color.accentVar,
             hasAccessory: style === 1,
-            hasMoon: style === 2,
+            hasPulse: style === 2,
           };
         })
         .sort((a, b) => a.ringIndex - b.ringIndex)
@@ -388,14 +432,18 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
         <g style={sceneStyle}>
           {nodes
             .filter((node) => node.kind === "core")
-            .map((node) => (
-              <g key={node.id}>
-                {(() => {
-                  const r = radiusFor(node);
-                  const rot = galaxySeed(node.id);
-                  return (
-                    <g transform={`translate(${node.x}, ${node.y}) rotate(${rot})`}>
-                      {GALAXY_WISPS.map((w, i) => (
+            .map((node) => {
+              const rank = coreRankById.get(node.id) ?? 0;
+              const coreCount = coreRankById.size || 1;
+              const r = coreRadiusFor(rank, coreCount);
+              const seed = galaxySeed(node.id);
+              const flipWarm = seed % 2 === 1;
+              return (
+                <g key={node.id}>
+                  <g transform={`translate(${node.x}, ${node.y}) rotate(${seed})`}>
+                    {GALAXY_WISPS.map((w, i) => {
+                      const isWarm = flipWarm ? !w.warm : w.warm;
+                      return (
                         <ellipse
                           key={`wisp-${i}`}
                           cx={r * w.dx}
@@ -403,52 +451,52 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
                           rx={r * w.rxMul}
                           ry={r * w.ryMul}
                           transform={`rotate(${w.rot} ${r * w.dx} ${r * w.dy})`}
-                          fill={w.warm ? "url(#taste-map-galaxy-haze-warm)" : "url(#taste-map-galaxy-haze)"}
+                          fill={isWarm ? "url(#taste-map-galaxy-haze-warm)" : "url(#taste-map-galaxy-haze)"}
                           filter="url(#taste-map-galaxy-haze-blur)"
                           opacity={w.opacity}
                           pointerEvents="none"
                         />
-                      ))}
-                      {GALAXY_SPARKLES.map((sp, i) => (
-                        <path
-                          key={`sparkle-${i}`}
-                          d={sparklePath(sp.size)}
-                          transform={`translate(${r * sp.dx}, ${r * sp.dy})`}
-                          className="taste-map-galaxy-sparkle"
-                          style={{ animationDelay: `${sp.delay}s` }}
-                          fill={i % 2 === 0 ? "#ffffff" : "var(--accent-yellow)"}
-                          pointerEvents="none"
-                        />
-                      ))}
-                    </g>
-                  );
-                })()}
-                <circle
-                  className="taste-map-node-ring"
-                  cx={node.x}
-                  cy={node.y}
-                  r={radiusFor(node) + 12}
-                  pointerEvents="none"
-                />
-                <circle
-                  cx={node.x}
-                  cy={node.y}
-                  r={radiusFor(node)}
-                  className="taste-map-node-core"
-                  fill="url(#taste-map-node-core-fill)"
-                  filter="url(#taste-map-glow-core)"
-                  style={{
-                    opacity: opacityFor(node),
-                    pointerEvents: "auto",
-                    transition: "opacity 350ms ease, filter 200ms ease",
-                  }}
-                  onPointerDown={() => handlePointerDown(node)}
-                  onClick={(e) => handleCoreClick(e, node)}
-                >
-                  <title>{node.id}</title>
-                </circle>
-              </g>
-            ))}
+                      );
+                    })}
+                    {GALAXY_SPARKLES.map((sp, i) => (
+                      <path
+                        key={`sparkle-${i}`}
+                        d={sparklePath(sp.size)}
+                        transform={`translate(${r * sp.dx}, ${r * sp.dy})`}
+                        className="taste-map-galaxy-sparkle"
+                        style={{ animationDelay: `${sp.delay}s` }}
+                        fill={i % 2 === 0 ? "#ffffff" : "var(--accent-yellow)"}
+                        pointerEvents="none"
+                      />
+                    ))}
+                  </g>
+                  <circle
+                    className="taste-map-node-ring"
+                    cx={node.x}
+                    cy={node.y}
+                    r={r + 12}
+                    pointerEvents="none"
+                  />
+                  <circle
+                    cx={node.x}
+                    cy={node.y}
+                    r={r}
+                    className="taste-map-node-core"
+                    fill="url(#taste-map-node-core-fill)"
+                    filter="url(#taste-map-glow-core)"
+                    style={{
+                      opacity: opacityFor(node),
+                      pointerEvents: "auto",
+                      transition: "opacity 350ms ease, filter 200ms ease",
+                    }}
+                    onPointerDown={() => handlePointerDown(node)}
+                    onClick={(e) => handleCoreClick(e, node)}
+                  >
+                    <title>{node.id}</title>
+                  </circle>
+                </g>
+              );
+            })}
           {zoomedGalaxyId && zoomedAnchor && (
             <g transform={`translate(${zoomedAnchor.x}, ${zoomedAnchor.y}) rotate(${ORBIT_TILT_DEG})`}>
               {orbitPlanets.map(({ node, rx, ry }) => (
@@ -462,7 +510,7 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
                   pointerEvents="none"
                 />
               ))}
-              {orbitPlanets.map(({ node, px, py, displayRadius, gradientId, accentVar, hasAccessory, hasMoon }) => (
+              {orbitPlanets.map(({ node, px, py, displayRadius, gradientId, accentVar, hasAccessory, hasPulse }) => (
                 <g key={`planet-${node.id}`}>
                   {hasAccessory && (
                     <g transform={`translate(${px}, ${py}) rotate(25)`}>
@@ -479,20 +527,11 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
                       />
                     </g>
                   )}
-                  {hasMoon && (
-                    <circle
-                      cx={px + radiusFor(node) * 1.6}
-                      cy={py - radiusFor(node) * 1.1}
-                      r={radiusFor(node) * 0.28}
-                      fill={`url(#${gradientId})`}
-                      pointerEvents="none"
-                    />
-                  )}
                   <circle
                     cx={px}
                     cy={py}
                     r={displayRadius}
-                    className="taste-map-node-candidate"
+                    className={`taste-map-node-candidate${hasPulse ? " taste-map-node-pulse" : ""}`}
                     fill={`url(#${gradientId})`}
                     filter="url(#taste-map-glow-candidate)"
                     style={{

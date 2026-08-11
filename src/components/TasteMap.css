@@ -100,13 +100,11 @@
   cursor: pointer;
 }
 
-.taste-map-node-ring {
-  fill: none;
-  stroke: var(--accent-cyan);
-  stroke-width: 1.5;
-  stroke-dasharray: 4 6;
-  opacity: 0.35;
-  animation: taste-map-ring-pulse 4s ease-in-out infinite;
+.taste-map-node-glow {
+  pointer-events: none;
+  mix-blend-mode: screen;
+  transform-origin: center;
+  animation: taste-map-glow-pulse 6s ease-in-out infinite;
 }
 
 .taste-map-node-label-bg {
@@ -145,20 +143,20 @@
   }
 }
 
-@keyframes taste-map-ring-pulse {
+@keyframes taste-map-glow-pulse {
   0%,
   100% {
-    opacity: 0.2;
-    stroke-dashoffset: 0;
+    opacity: 0.35;
+    transform: scale(0.94);
   }
   50% {
-    opacity: 0.5;
-    stroke-dashoffset: 20;
+    opacity: 0.7;
+    transform: scale(1.08);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .taste-map-node-ring {
+  .taste-map-node-glow {
     animation: none;
   }
 }

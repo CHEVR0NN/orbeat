@@ -200,12 +200,14 @@ function NodeLabel({
   cx,
   cy,
   text,
+  color,
   onMouseEnter,
   onMouseLeave,
 }: {
   cx: number;
   cy: number;
   text: string;
+  color: string;
   onMouseEnter?: () => void;
   onMouseLeave?: () => void;
 }) {
@@ -224,6 +226,7 @@ function NodeLabel({
         height={height}
         rx={height / 2}
         className="taste-map-node-label-bg"
+        style={{ stroke: color }}
       />
       <text
         x={cx}
@@ -574,8 +577,17 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
       frameId = requestAnimationFrame(tick);
     };
     frameId = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(frameId);
-  }, [zoomedGalaxyId]);
+    return () => {
+      cancelAnimationFrame(frameId);
+      galaxyOrbitStateRef.current.forEach((_, id) => {
+        const el = galaxyNodeElsRef.current.get(id);
+        const anchor = galaxyAnchors.get(id);
+        if (el && anchor) {
+          el.setAttribute("transform", `translate(${anchor.x}, ${anchor.y})`);
+        }
+      });
+    };
+  }, [zoomedGalaxyId, galaxyAnchors]);
 
   function handleGalaxyMouseEnter(id: string) {
     const state = galaxyOrbitStateRef.current.get(id);
@@ -667,6 +679,9 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
               <stop offset="100%" stopColor={color} stopOpacity={0} />
             </radialGradient>
           ))}
+          <filter id="taste-map-glow-blur" x="-60%" y="-60%" width="220%" height="220%">
+            <feGaussianBlur stdDeviation="6" />
+          </filter>
         </defs>
         <rect
           x={0}
@@ -770,6 +785,7 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
                     cx={0}
                     cy={labelOffset}
                     text={node.id}
+                    color={fill}
                     onMouseEnter={() => handleNodeMouseEnter(node.id)}
                     onMouseLeave={() => handleNodeMouseLeave(node.id)}
                   />
@@ -789,6 +805,9 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
                 const isZoomedCenter = node.id === zoomedGalaxyId;
                 const auraColor = PLANET_COLORS[rank % PLANET_COLORS.length];
                 const CorePlanetShape = PLANET_SHAPES[rank % PLANET_SHAPES.length];
+                const centerSquashStyle: CSSProperties | undefined = isZoomedCenter
+                  ? { transform: `rotateX(${VINYL_TILT_DEG}deg)`, transformOrigin: "0px 0px" }
+                  : undefined;
                 return (
                   <g
                     key={node.id}
@@ -799,11 +818,18 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
                     transform={`translate(${node.x}, ${node.y})`}
                   >
                     <circle
-                      className="taste-map-node-ring"
+                      className="taste-map-node-glow"
                       cx={0}
                       cy={0}
-                      r={r + 12}
+                      r={r + 16 + (galaxySeed(node.id) % 14)}
+                      fill={`url(#${AURA_GRADIENT_IDS[rank % AURA_GRADIENT_IDS.length]})`}
+                      filter="url(#taste-map-glow-blur)"
                       pointerEvents="none"
+                      style={{
+                        animationDuration: `${5 + (galaxySeed(node.id) % 5)}s`,
+                        animationDelay: `-${galaxySeed(node.id) % 6}s`,
+                        ...centerSquashStyle,
+                      }}
                     />
                     {selectedNodeId === node.id && (
                       <SelectionBracket cx={0} cy={0} half={r + 16} />
@@ -813,7 +839,7 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
                       cy={0}
                       r={r * 1.4}
                       fill={`url(#${AURA_GRADIENT_IDS[rank % AURA_GRADIENT_IDS.length]})`}
-                      style={{ filter: `drop-shadow(0 0 16px ${auraColor})` }}
+                      style={{ filter: `drop-shadow(0 0 16px ${auraColor})`, ...centerSquashStyle }}
                       pointerEvents="none"
                     />
                     <g
@@ -828,7 +854,7 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
                           r={r}
                           color={VINYL_LABEL_COLOR}
                           className="taste-map-node-core"
-                          style={{ opacity: opacityFor(node) * depthOpacity, pointerEvents: "auto", transition: "opacity 350ms ease" }}
+                          style={{ opacity: opacityFor(node) * depthOpacity, pointerEvents: "auto", transition: "opacity 350ms ease", ...centerSquashStyle }}
                           title={node.id}
                         />
                       ) : (
@@ -843,7 +869,7 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
                           title={node.id}
                         />
                       )}
-                      <NodeLabel cx={0} cy={r + 24} text={node.id} />
+                      <NodeLabel cx={0} cy={r + 24} text={node.id} color={auraColor} />
                     </g>
                   </g>
                 );

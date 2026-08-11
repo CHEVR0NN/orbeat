@@ -134,10 +134,15 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
       coreNodes.forEach((n) => map.set(n.id, { x: centerX, y: centerY }));
     } else {
       coreNodes.forEach((n, i) => {
-        const angle = i * ((2 * Math.PI) / coreNodes.length) - Math.PI / 2;
+        const baseAngle = i * ((2 * Math.PI) / coreNodes.length) - Math.PI / 2;
+        const seed = galaxySeed(n.id);
+        const angleJitterDeg = (seed % 33) - 16;
+        const radiusFactor = 0.8 + ((seed * 7) % 46) / 100;
+        const angle = baseAngle + (angleJitterDeg * Math.PI) / 180;
+        const radius = GALAXY_RADIUS * radiusFactor;
         map.set(n.id, {
-          x: centerX + GALAXY_RADIUS * Math.cos(angle),
-          y: centerY + GALAXY_RADIUS * Math.sin(angle),
+          x: centerX + radius * Math.cos(angle),
+          y: centerY + radius * Math.sin(angle),
         });
       });
     }
@@ -420,6 +425,11 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
             <stop offset="60%" stopColor="rgba(255, 73, 124, 0.38)" />
             <stop offset="100%" stopColor="rgba(255, 184, 48, 0)" />
           </radialGradient>
+          <radialGradient id="taste-map-vignette" cx="50%" cy="50%" r="70%">
+            <stop offset="0%" stopColor="rgba(0, 0, 0, 0)" />
+            <stop offset="70%" stopColor="rgba(0, 0, 0, 0)" />
+            <stop offset="100%" stopColor="rgba(0, 0, 0, 0.55)" />
+          </radialGradient>
         </defs>
         <rect
           x={0}
@@ -499,7 +509,7 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
             })}
           {zoomedGalaxyId && zoomedAnchor && (
             <g transform={`translate(${zoomedAnchor.x}, ${zoomedAnchor.y}) rotate(${ORBIT_TILT_DEG})`}>
-              {orbitPlanets.map(({ node, rx, ry }) => (
+              {orbitPlanets.map(({ node, rx, ry, ringIndex }) => (
                 <ellipse
                   key={`ring-${node.id}`}
                   cx={0}
@@ -507,11 +517,24 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
                   rx={rx}
                   ry={ry}
                   className="taste-map-orbit-ring"
+                  style={{
+                    opacity: lerp(0.32, 0.08, visibleCount > 1 ? ringIndex / (visibleCount - 1) : 0),
+                  }}
                   pointerEvents="none"
                 />
               ))}
-              {orbitPlanets.map(({ node, px, py, displayRadius, gradientId, accentVar, hasAccessory, hasPulse }) => (
+              {orbitPlanets.map(
+                ({ node, px, py, displayRadius, gradientId, accentVar, hasAccessory, hasPulse, ringIndex }) => (
                 <g key={`planet-${node.id}`}>
+                  <ellipse
+                    cx={px}
+                    cy={py + displayRadius * 0.75}
+                    rx={displayRadius * 0.9}
+                    ry={displayRadius * 0.28}
+                    fill="rgba(0, 0, 0, 0.35)"
+                    filter="url(#taste-map-galaxy-haze-blur)"
+                    pointerEvents="none"
+                  />
                   {hasAccessory && (
                     <g transform={`translate(${px}, ${py}) rotate(25)`}>
                       <ellipse
@@ -533,9 +556,9 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
                     r={displayRadius}
                     className={`taste-map-node-candidate${hasPulse ? " taste-map-node-pulse" : ""}`}
                     fill={`url(#${gradientId})`}
-                    filter="url(#taste-map-glow-candidate)"
                     style={{
                       opacity: opacityFor(node),
+                      filter: `url(#taste-map-glow-candidate) blur(${lerp(0, 1.4, visibleCount > 1 ? ringIndex / (visibleCount - 1) : 0)}px)`,
                       transition: "opacity 350ms ease, filter 200ms ease",
                     }}
                     onPointerDown={(e) => handleOrbitPointerDown(e, node)}
@@ -548,6 +571,18 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
             </g>
           )}
         </g>
+        <rect
+          x={0}
+          y={0}
+          width={WIDTH}
+          height={HEIGHT}
+          fill="url(#taste-map-vignette)"
+          pointerEvents="none"
+          style={{
+            opacity: zoomedGalaxyId ? 1 : 0,
+            transition: "opacity 700ms ease",
+          }}
+        />
       </svg>
     </div>
   );

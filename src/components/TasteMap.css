@@ -58,10 +58,6 @@
   animation: taste-map-vinyl-spin 90s linear infinite;
 }
 
-.taste-map-vinyl-spin:has(.taste-map-node-candidate:hover) {
-  animation-play-state: paused;
-}
-
 @keyframes taste-map-vinyl-spin {
   from {
     transform: rotate(0deg);
@@ -95,25 +91,6 @@
   filter: drop-shadow(0 0 4px var(--accent-cyan)) drop-shadow(0 0 10px rgba(35, 229, 216, 0.7));
 }
 
-.taste-map-label-counter-spin {
-  animation: taste-map-vinyl-spin-reverse 90s linear infinite;
-}
-
-@keyframes taste-map-vinyl-spin-reverse {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(-360deg);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .taste-map-label-counter-spin {
-    animation: none;
-  }
-}
-
 .taste-map-node-core {
   stroke: none;
   cursor: pointer;
@@ -142,7 +119,7 @@
 .taste-map-node-label-text {
   fill: var(--accent-yellow);
   font-family: var(--font-hud);
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .taste-map-node-selection-bracket {

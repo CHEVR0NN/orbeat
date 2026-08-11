@@ -68,12 +68,18 @@ function PlanetWithRings({ cx, cy, r, color, className, style, title }: NodeShap
         pointerEvents="none"
       />
       <circle cx={cx} cy={cy} r={r} fill={color} />
+      <circle cx={cx - r * 0.35} cy={cy - r * 0.2} r={r * 0.18} fill="#000" opacity={0.18} pointerEvents="none" />
+      <circle cx={cx + r * 0.2} cy={cy + r * 0.32} r={r * 0.12} fill="#000" opacity={0.15} pointerEvents="none" />
+      <ellipse cx={cx + r * 0.32} cy={cy - r * 0.28} rx={r * 0.14} ry={r * 0.08} fill="#000" opacity={0.12} pointerEvents="none" />
       <path
         d={`M ${cx},${cy - r} A ${r},${r} 0 0 1 ${cx},${cy + r} Z`}
         fill="#000"
         opacity={0.22}
         pointerEvents="none"
       />
+      <g className="taste-map-node-moon" style={{ transformOrigin: `${cx}px ${cy}px` }} pointerEvents="none">
+        <circle cx={cx + r * 1.9} cy={cy} r={Math.max(2, r * 0.2)} fill="var(--text-white)" opacity={0.85} />
+      </g>
     </g>
   );
 }
@@ -101,11 +107,15 @@ function CrescentMoon({ cx, cy, r, color, className, style, title }: NodeShapePr
   );
 }
 
-function SolidDot({ cx, cy, r, color, className, style, title }: NodeShapeProps) {
+function PixelStarCluster({ cx, cy, r, color, className, style, title }: NodeShapeProps) {
+  const s = Math.max(2, r * 0.5);
   return (
     <g className={className} style={style}>
       <title>{title}</title>
-      <circle cx={cx} cy={cy} r={r} fill={color} />
+      <rect x={cx - s * 1.6} y={cy - s * 0.3} width={s} height={s} fill={color} />
+      <rect x={cx + s * 0.5} y={cy - s * 1.3} width={s * 0.7} height={s * 0.7} fill={color} />
+      <rect x={cx - s * 0.2} y={cy + s * 0.6} width={s * 0.6} height={s * 0.6} fill={color} />
+      <circle cx={cx + s * 0.9} cy={cy + s * 0.9} r={s * 0.35} fill={color} />
     </g>
   );
 }
@@ -252,7 +262,7 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
           })
       )
       .force("charge", forceManyBody().strength(-55))
-      .force("collide", forceCollide<SimNode>((d) => radiusFor(d) + 6))
+      .force("collide", forceCollide<SimNode>((d) => radiusFor(d) + 25))
       .force(
         "x",
         forceX<SimNode>((d) => anchorForNode(d).x).strength((d) => (d.kind === "core" ? 0.9 : 0.22))
@@ -443,6 +453,16 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
           <ellipse cx="12" cy="15" rx="10" ry="3.5" />
           <path d="M6 14 C6 8, 18 8, 18 14" />
         </svg>
+        <Star className="taste-map-decor-icon taste-map-decor-4" />
+        <Zap className="taste-map-decor-icon taste-map-decor-5" />
+        <svg className="taste-map-decor-icon taste-map-decor-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+          <circle cx="12" cy="12" r="9" strokeDasharray="2 4" />
+        </svg>
+        <svg className="taste-map-decor-icon taste-map-decor-7" viewBox="0 0 24 24">
+          <circle cx="6" cy="6" r="2" fill="currentColor" />
+          <circle cx="14" cy="10" r="1.3" fill="currentColor" />
+          <circle cx="9" cy="16" r="1" fill="currentColor" />
+        </svg>
       </div>
       <svg
         className="taste-map"
@@ -457,13 +477,17 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
             <stop offset="70%" stopColor="rgba(0, 0, 0, 0)" />
             <stop offset="100%" stopColor="rgba(0, 0, 0, 0.55)" />
           </radialGradient>
+          <radialGradient id="taste-map-bg-gradient" cx="50%" cy="50%" r="75%">
+            <stop offset="0%" stopColor="#2A1236" />
+            <stop offset="70%" stopColor="#0E0B16" />
+          </radialGradient>
         </defs>
         <rect
           x={0}
           y={0}
           width={WIDTH}
           height={HEIGHT}
-          fill="var(--bg-space)"
+          fill="url(#taste-map-bg-gradient)"
           onClick={() => {
             setZoomedGalaxyId(null);
             setSelectedNodeId(null);
@@ -507,6 +531,19 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
                     r={r + 12}
                     pointerEvents="none"
                   />
+                  {selectedNodeId === node.id && (
+                    <circle
+                      className="taste-map-node-selected-glow"
+                      cx={node.x}
+                      cy={node.y}
+                      r={r + 16}
+                      fill="none"
+                      stroke={FLAT_COLOR_CYCLE[rank % 4]}
+                      strokeWidth={2}
+                      style={{ transformOrigin: `${node.x ?? 0}px ${node.y ?? 0}px` }}
+                      pointerEvents="none"
+                    />
+                  )}
                   <g
                     onPointerDown={() => handlePointerDown(node)}
                     onClick={(e) => handleCoreClick(e, node)}
@@ -568,7 +605,7 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
               ))}
               {orbitPlanets.map(
                 ({ node, ringIndex, px, py, displayRadius, fill, hasPulse }) => {
-                  const CandidateShape = ringIndex % 3 === 0 ? Starburst : ringIndex % 3 === 1 ? CrescentMoon : SolidDot;
+                  const CandidateShape = ringIndex % 3 === 0 ? Starburst : ringIndex % 3 === 1 ? CrescentMoon : PixelStarCluster;
                   return (
                     <g key={`planet-${node.id}`}>
                       <g
@@ -577,6 +614,19 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
                         onPointerEnter={() => setHoveredNodeId(node.id)}
                         onPointerLeave={() => setHoveredNodeId((id) => (id === node.id ? null : id))}
                       >
+                        {selectedNodeId === node.id && (
+                          <circle
+                            className="taste-map-node-selected-glow"
+                            cx={px}
+                            cy={py}
+                            r={displayRadius + 10}
+                            fill="none"
+                            stroke={fill}
+                            strokeWidth={2}
+                            style={{ transformOrigin: `${px}px ${py}px` }}
+                            pointerEvents="none"
+                          />
+                        )}
                         <CandidateShape
                           cx={px}
                           cy={py}

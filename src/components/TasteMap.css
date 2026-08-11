@@ -5,6 +5,20 @@
   box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.75);
 }
 
+.taste-map-wrap::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  opacity: 0.07;
+  mix-blend-mode: overlay;
+  background-image:
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.6) 0px, rgba(255, 255, 255, 0.6) 1px, transparent 1px, transparent 3px),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 100% 3px, 140px 140px;
+}
+
 .taste-map {
   width: 100%;
   height: 100%;
@@ -156,6 +170,46 @@
   }
 }
 
+.taste-map-node-moon {
+  animation: taste-map-moon-orbit 9s linear infinite;
+}
+
+@keyframes taste-map-moon-orbit {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .taste-map-node-moon {
+    animation: none;
+  }
+}
+
+.taste-map-node-selected-glow {
+  animation: taste-map-pulse-glow 1.6s ease-in-out infinite;
+}
+
+@keyframes taste-map-pulse-glow {
+  0%, 100% {
+    opacity: 0.35;
+    transform: scale(0.95);
+  }
+  50% {
+    opacity: 0.9;
+    transform: scale(1.15);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .taste-map-node-selected-glow {
+    animation: none;
+  }
+}
+
 .taste-map-decor {
   position: absolute;
   inset: 0;
@@ -214,6 +268,45 @@
     opacity: 0.75;
     transform: scale(1.05);
   }
+}
+
+.taste-map-decor-4 {
+  bottom: 6%;
+  right: 16%;
+  width: 16px;
+  height: 16px;
+  color: var(--accent-pink);
+  animation: taste-map-decor-pulse 7s ease-in-out infinite alternate;
+}
+
+.taste-map-decor-5 {
+  top: 45%;
+  right: 4%;
+  width: 18px;
+  height: 18px;
+  color: var(--accent-yellow);
+  animation: taste-map-decor-float 9.5s ease-in-out infinite alternate;
+  animation-delay: 1.5s;
+}
+
+.taste-map-decor-6 {
+  top: 55%;
+  left: 4%;
+  width: 24px;
+  height: 24px;
+  color: var(--accent-purple);
+  animation: taste-map-decor-float 13s ease-in-out infinite alternate;
+  animation-delay: 2.2s;
+}
+
+.taste-map-decor-7 {
+  bottom: 32%;
+  right: 42%;
+  width: 20px;
+  height: 20px;
+  color: var(--accent-cyan);
+  animation: taste-map-decor-pulse 5.5s ease-in-out infinite alternate;
+  animation-delay: 0.8s;
 }
 
 @media (prefers-reduced-motion: reduce) {

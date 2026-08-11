@@ -80,3 +80,23 @@
     animation: none;
   }
 }
+
+.taste-map-galaxy-sparkle {
+  animation: taste-map-sparkle-twinkle 3.2s ease-in-out infinite;
+}
+
+@keyframes taste-map-sparkle-twinkle {
+  0%, 100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .taste-map-galaxy-sparkle {
+    animation: none;
+    opacity: 0.8;
+  }
+}

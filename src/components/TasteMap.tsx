@@ -23,6 +23,32 @@ const MAX_LINK_DISTANCE = 240;
 const MIN_LINK_DISTANCE = 70;
 const GALAXY_RADIUS = Math.min(WIDTH, HEIGHT) * 0.32;
 
+const GALAXY_WISPS = [
+  { dx: -0.5, dy: -0.9, rxMul: 2.4, ryMul: 0.95, rot: -25, warm: false, opacity: 0.55 },
+  { dx: 0.8, dy: 0.3, rxMul: 2.6, ryMul: 0.9, rot: 40, warm: true, opacity: 0.5 },
+  { dx: -0.9, dy: 0.6, rxMul: 2.2, ryMul: 0.8, rot: 80, warm: false, opacity: 0.45 },
+  { dx: 0.3, dy: -1.0, rxMul: 1.9, ryMul: 0.65, rot: -60, warm: true, opacity: 0.5 },
+  { dx: -0.2, dy: 0.95, rxMul: 2.3, ryMul: 0.75, rot: 15, warm: false, opacity: 0.4 },
+];
+
+const GALAXY_SPARKLES = [
+  { dx: -1.8, dy: -1.4, size: 6, delay: 0 },
+  { dx: 1.6, dy: -0.9, size: 4, delay: 0.6 },
+  { dx: -0.9, dy: 1.7, size: 5, delay: 1.2 },
+  { dx: 1.5, dy: 1.3, size: 3.5, delay: 1.8 },
+  { dx: -1.6, dy: 0.3, size: 3, delay: 0.9 },
+];
+
+function galaxySeed(id: string): number {
+  let s = 0;
+  for (let i = 0; i < id.length; i++) s += id.charCodeAt(i);
+  return s % 360;
+}
+
+function sparklePath(s: number): string {
+  return `M0,${-s} L${s * 0.22},${-s * 0.22} L${s},0 L${s * 0.22},${s * 0.22} L0,${s} L${-s * 0.22},${s * 0.22} L${-s},0 L${-s * 0.22},${-s * 0.22} Z`;
+}
+
 const ORBIT_INNER_RX = 55;
 const ORBIT_INNER_RY = 20;
 const ORBIT_RING_STEP_RX = 26;
@@ -294,13 +320,18 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
             </feMerge>
           </filter>
           <radialGradient id="taste-map-galaxy-haze" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor="rgba(35, 229, 216, 0.35)" />
-            <stop offset="60%" stopColor="rgba(232, 146, 232, 0.12)" />
+            <stop offset="0%" stopColor="rgba(35, 229, 216, 0.75)" />
+            <stop offset="60%" stopColor="rgba(232, 146, 232, 0.4)" />
             <stop offset="100%" stopColor="rgba(35, 229, 216, 0)" />
           </radialGradient>
           <filter id="taste-map-galaxy-haze-blur" x="-60%" y="-60%" width="220%" height="220%">
-            <feGaussianBlur in="SourceGraphic" stdDeviation="6" />
+            <feGaussianBlur in="SourceGraphic" stdDeviation="4.5" />
           </filter>
+          <radialGradient id="taste-map-galaxy-haze-warm" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="rgba(255, 184, 48, 0.7)" />
+            <stop offset="60%" stopColor="rgba(255, 73, 124, 0.38)" />
+            <stop offset="100%" stopColor="rgba(255, 184, 48, 0)" />
+          </radialGradient>
         </defs>
         <rect
           x={0}
@@ -315,39 +346,39 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
             .filter((node) => node.kind === "core")
             .map((node) => (
               <g key={node.id}>
-                <ellipse
-                  cx={node.x}
-                  cy={node.y}
-                  rx={radiusFor(node) * 2.6}
-                  ry={radiusFor(node) * 1.1}
-                  transform={`rotate(-20 ${node.x} ${node.y})`}
-                  fill="url(#taste-map-galaxy-haze)"
-                  filter="url(#taste-map-galaxy-haze-blur)"
-                  opacity={0.5}
-                  pointerEvents="none"
-                />
-                <ellipse
-                  cx={node.x}
-                  cy={node.y}
-                  rx={radiusFor(node) * 1.9}
-                  ry={radiusFor(node) * 0.7}
-                  transform={`rotate(15 ${node.x} ${node.y})`}
-                  fill="url(#taste-map-galaxy-haze)"
-                  filter="url(#taste-map-galaxy-haze-blur)"
-                  opacity={0.3}
-                  pointerEvents="none"
-                />
-                <ellipse
-                  cx={node.x}
-                  cy={node.y}
-                  rx={radiusFor(node) * 1.5}
-                  ry={radiusFor(node) * 0.5}
-                  transform={`rotate(-50 ${node.x} ${node.y})`}
-                  fill="url(#taste-map-galaxy-haze)"
-                  filter="url(#taste-map-galaxy-haze-blur)"
-                  opacity={0.25}
-                  pointerEvents="none"
-                />
+                {(() => {
+                  const r = radiusFor(node);
+                  const rot = galaxySeed(node.id);
+                  return (
+                    <g transform={`translate(${node.x}, ${node.y}) rotate(${rot})`}>
+                      {GALAXY_WISPS.map((w, i) => (
+                        <ellipse
+                          key={`wisp-${i}`}
+                          cx={r * w.dx}
+                          cy={r * w.dy}
+                          rx={r * w.rxMul}
+                          ry={r * w.ryMul}
+                          transform={`rotate(${w.rot} ${r * w.dx} ${r * w.dy})`}
+                          fill={w.warm ? "url(#taste-map-galaxy-haze-warm)" : "url(#taste-map-galaxy-haze)"}
+                          filter="url(#taste-map-galaxy-haze-blur)"
+                          opacity={w.opacity}
+                          pointerEvents="none"
+                        />
+                      ))}
+                      {GALAXY_SPARKLES.map((sp, i) => (
+                        <path
+                          key={`sparkle-${i}`}
+                          d={sparklePath(sp.size)}
+                          transform={`translate(${r * sp.dx}, ${r * sp.dy})`}
+                          className="taste-map-galaxy-sparkle"
+                          style={{ animationDelay: `${sp.delay}s` }}
+                          fill={i % 2 === 0 ? "#ffffff" : "var(--accent-yellow)"}
+                          pointerEvents="none"
+                        />
+                      ))}
+                    </g>
+                  );
+                })()}
                 <circle
                   className="taste-map-node-ring"
                   cx={node.x}

@@ -281,6 +281,56 @@
   animation-delay: 0.8s;
 }
 
+.taste-map-decor-8 {
+  top: 3%;
+  left: 46%;
+  width: 16px;
+  height: 16px;
+  color: var(--accent-pink);
+  animation: taste-map-decor-pulse 6.5s ease-in-out infinite alternate;
+  animation-delay: 1.1s;
+}
+
+.taste-map-decor-9 {
+  top: 20%;
+  right: 24%;
+  width: 22px;
+  height: 22px;
+  color: var(--accent-yellow);
+  animation: taste-map-decor-float 12s ease-in-out infinite alternate;
+  animation-delay: 3s;
+}
+
+.taste-map-decor-10 {
+  bottom: 4%;
+  left: 44%;
+  width: 18px;
+  height: 18px;
+  color: var(--accent-cyan);
+  animation: taste-map-decor-pulse 7.5s ease-in-out infinite alternate;
+  animation-delay: 0.4s;
+}
+
+.taste-map-decor-11 {
+  bottom: 22%;
+  left: 24%;
+  width: 20px;
+  height: 20px;
+  color: var(--accent-purple);
+  animation: taste-map-decor-float 10.5s ease-in-out infinite alternate;
+  animation-delay: 4.2s;
+}
+
+.taste-map-decor-12 {
+  top: 30%;
+  right: 6%;
+  width: 18px;
+  height: 18px;
+  color: var(--accent-yellow);
+  animation: taste-map-decor-float 8.5s ease-in-out infinite alternate;
+  animation-delay: 1.8s;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .taste-map-decor-icon {
     animation: none !important;

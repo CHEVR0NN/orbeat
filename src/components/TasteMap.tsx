@@ -51,6 +51,10 @@ const VINYL_SPINDLE_FILL = "#000000";
 
 const ORBIT_DURATION_MIN_S = 24;
 const ORBIT_DURATION_MAX_S = 110;
+// Much slower than the zoomed candidate orbits above -- ambient overview
+// drift, not a spinning carousel. Minutes per revolution.
+const GALAXY_ORBIT_DURATION_MIN_S = 240;
+const GALAXY_ORBIT_DURATION_MAX_S = 600;
 
 const VINYL_LABEL_COLOR = "var(--accent-yellow)";
 const PLANET_COLORS = [
@@ -270,6 +274,14 @@ function orbitSpeedFor(ringIndex: number): number {
   return (2 * Math.PI) / (orbitDurationFor(ringIndex) * ORBIT_TICK_HZ);
 }
 
+// Per-core ambient drift speed, varied slightly per id (via galaxySeed) so
+// the 5 cores don't move in lockstep.
+function galaxyOrbitSpeedFor(id: string): number {
+  const t = galaxySeed(id) / 360;
+  const durationS = lerp(GALAXY_ORBIT_DURATION_MIN_S, GALAXY_ORBIT_DURATION_MAX_S, t);
+  return (2 * Math.PI) / (durationS * ORBIT_TICK_HZ);
+}
+
 interface OrbitState {
   radius: number;
   angle: number;
@@ -319,12 +331,31 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
         const radius = GALAXY_RADIUS * radiusFactor;
         map.set(n.id, {
           x: centerX + radius * Math.cos(angle),
-          y: centerY + radius * Math.sin(angle),
+          y: centerY + radius * Math.sin(angle) * VINYL_TILT_PROJECTION,
         });
       });
     }
     return map;
   }, [graph]);
+
+  // Per-core depth variance (subtle secondary factor on top of rank-based
+  // size/opacity), same technique orbitPlanets uses for candidates: squashed
+  // y-offset from center as a 0..1 depth proxy -> lerp into scale/opacity.
+  const galaxyDepthById = useMemo(() => {
+    const map = new Map<string, { depthScale: number; depthOpacity: number }>();
+    graph.nodes
+      .filter((n) => n.kind === "core")
+      .forEach((n) => {
+        const anchor = galaxyAnchors.get(n.id);
+        if (!anchor) return;
+        const depthT = clamp(anchor.y / HEIGHT, 0, 1);
+        map.set(n.id, {
+          depthScale: lerp(DEPTH_SCALE_MIN, DEPTH_SCALE_MAX, depthT),
+          depthOpacity: lerp(DEPTH_OPACITY_MIN, DEPTH_OPACITY_MAX, depthT),
+        });
+      });
+    return map;
+  }, [graph, galaxyAnchors]);
 
   const coreRankById = useMemo(() => {
     const map = new Map<string, number>();
@@ -447,6 +478,13 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
   const nodeElsRef = useRef<Map<string, SVGGElement>>(new Map());
   const tonearmElRef = useRef<SVGLineElement | null>(null);
 
+  // Same imperative-DOM ref pattern as orbitStateRef/nodeElsRef above, but for
+  // the overview's 5 core planets: a slow ambient drift so the overview
+  // doesn't read as static, kept separate from the zoomed candidate loop so
+  // the two can run at very different speeds without interfering.
+  const galaxyOrbitStateRef = useRef<Map<string, OrbitState>>(new Map());
+  const galaxyNodeElsRef = useRef<Map<string, SVGGElement>>(new Map());
+
   useEffect(() => {
     const next = new Map<string, OrbitState>();
     orbitPlanets.forEach(({ node, ringIndex, radius, angle }) => {
@@ -494,6 +532,61 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
     if (state) state.speed = state.baseSpeed;
   }
 
+  // Seeds each core's polar {radius, angle} for the ambient drift loop below,
+  // recovering the pre-tilt-squash flat angle/radius from its (now squashed)
+  // galaxyAnchors position so the drift stays on the same circle the static
+  // layout placed it on.
+  useEffect(() => {
+    const next = new Map<string, OrbitState>();
+    const centerX = WIDTH / 2;
+    const centerY = HEIGHT / 2;
+    graph.nodes
+      .filter((n) => n.kind === "core")
+      .forEach((n) => {
+        const anchor = galaxyAnchors.get(n.id);
+        if (!anchor) return;
+        const px = anchor.x - centerX;
+        const pyFlat = (anchor.y - centerY) / VINYL_TILT_PROJECTION;
+        const radius = Math.hypot(px, pyFlat);
+        const angle = Math.atan2(pyFlat, px);
+        const baseSpeed = galaxyOrbitSpeedFor(n.id);
+        next.set(n.id, { radius, angle, baseSpeed, speed: baseSpeed });
+      });
+    galaxyOrbitStateRef.current = next;
+  }, [graph, galaxyAnchors]);
+
+  // Ambient overview drift -- active only while unzoomed. The single zoomed
+  // core's position is handled entirely by sceneStyle's pan/zoom transform,
+  // so this loop stays out of that path.
+  useEffect(() => {
+    if (zoomedGalaxyId) return;
+    let frameId: number;
+    const tick = () => {
+      galaxyOrbitStateRef.current.forEach((state, id) => {
+        state.angle += state.speed;
+        const el = galaxyNodeElsRef.current.get(id);
+        if (el) {
+          const x = WIDTH / 2 + state.radius * Math.cos(state.angle);
+          const y = HEIGHT / 2 + state.radius * Math.sin(state.angle) * VINYL_TILT_PROJECTION;
+          el.setAttribute("transform", `translate(${x}, ${y})`);
+        }
+      });
+      frameId = requestAnimationFrame(tick);
+    };
+    frameId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frameId);
+  }, [zoomedGalaxyId]);
+
+  function handleGalaxyMouseEnter(id: string) {
+    const state = galaxyOrbitStateRef.current.get(id);
+    if (state) state.speed = 0;
+  }
+
+  function handleGalaxyMouseLeave(id: string) {
+    const state = galaxyOrbitStateRef.current.get(id);
+    if (state) state.speed = state.baseSpeed;
+  }
+
   const tonearmTargetState =
     zoomedGalaxyId && selectedNodeId
       ? orbitPlanets.find((p) => p.node.id === selectedNodeId) ?? null
@@ -528,6 +621,26 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
           <circle cx="6" cy="6" r="2" fill="currentColor" />
           <circle cx="14" cy="10" r="1.3" fill="currentColor" />
           <circle cx="9" cy="16" r="1" fill="currentColor" />
+        </svg>
+        <Star className="taste-map-decor-icon taste-map-decor-8" />
+        <svg
+          className="taste-map-decor-icon taste-map-decor-9"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+        >
+          <path d="M3 21 L15 9" strokeDasharray="2 3" strokeLinecap="round" />
+          <path d="M15 9 L15 14 M15 9 L10 9" strokeLinecap="round" />
+        </svg>
+        <Zap className="taste-map-decor-icon taste-map-decor-10" />
+        <svg className="taste-map-decor-icon taste-map-decor-11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+          <circle cx="12" cy="12" r="7" strokeDasharray="2 4" />
+        </svg>
+        <svg className="taste-map-decor-icon taste-map-decor-12" viewBox="0 0 24 24">
+          <circle cx="6" cy="6" r="1.6" fill="currentColor" />
+          <circle cx="13" cy="4" r="1" fill="currentColor" />
+          <circle cx="10" cy="12" r="1.2" fill="currentColor" />
         </svg>
       </div>
       <svg className="taste-map" viewBox={`0 0 ${WIDTH} ${HEIGHT}`}>
@@ -669,54 +782,68 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
               .map((node) => {
                 const rank = coreRankById.get(node.id) ?? 0;
                 const coreCount = coreRankById.size || 1;
-                const r = coreRadiusFor(rank, coreCount);
+                const depth = galaxyDepthById.get(node.id);
+                const depthScale = depth?.depthScale ?? 1;
+                const depthOpacity = depth?.depthOpacity ?? 1;
+                const r = coreRadiusFor(rank, coreCount) * depthScale;
                 const isZoomedCenter = node.id === zoomedGalaxyId;
                 const auraColor = PLANET_COLORS[rank % PLANET_COLORS.length];
                 const CorePlanetShape = PLANET_SHAPES[rank % PLANET_SHAPES.length];
                 return (
-                  <g key={node.id}>
+                  <g
+                    key={node.id}
+                    ref={(el) => {
+                      if (el) galaxyNodeElsRef.current.set(node.id, el);
+                      else galaxyNodeElsRef.current.delete(node.id);
+                    }}
+                    transform={`translate(${node.x}, ${node.y})`}
+                  >
                     <circle
                       className="taste-map-node-ring"
-                      cx={node.x}
-                      cy={node.y}
+                      cx={0}
+                      cy={0}
                       r={r + 12}
                       pointerEvents="none"
                     />
                     {selectedNodeId === node.id && (
-                      <SelectionBracket cx={node.x ?? 0} cy={node.y ?? 0} half={r + 16} />
+                      <SelectionBracket cx={0} cy={0} half={r + 16} />
                     )}
                     <circle
-                      cx={node.x}
-                      cy={node.y}
+                      cx={0}
+                      cy={0}
                       r={r * 1.4}
                       fill={`url(#${AURA_GRADIENT_IDS[rank % AURA_GRADIENT_IDS.length]})`}
                       style={{ filter: `drop-shadow(0 0 16px ${auraColor})` }}
                       pointerEvents="none"
                     />
-                    <g onClick={(e) => handleCoreClick(e, node)}>
+                    <g
+                      onClick={(e) => handleCoreClick(e, node)}
+                      onMouseEnter={() => handleGalaxyMouseEnter(node.id)}
+                      onMouseLeave={() => handleGalaxyMouseLeave(node.id)}
+                    >
                       {isZoomedCenter ? (
                         <VinylCenterLabel
-                          cx={node.x ?? 0}
-                          cy={node.y ?? 0}
+                          cx={0}
+                          cy={0}
                           r={r}
                           color={VINYL_LABEL_COLOR}
                           className="taste-map-node-core"
-                          style={{ opacity: opacityFor(node), pointerEvents: "auto", transition: "opacity 350ms ease" }}
+                          style={{ opacity: opacityFor(node) * depthOpacity, pointerEvents: "auto", transition: "opacity 350ms ease" }}
                           title={node.id}
                         />
                       ) : (
                         <CorePlanetShape
-                          cx={node.x ?? 0}
-                          cy={node.y ?? 0}
+                          cx={0}
+                          cy={0}
                           r={r}
                           color={auraColor}
                           fillUrl={`url(#${PLANET_GRADIENT_IDS[rank % PLANET_GRADIENT_IDS.length]})`}
                           className="taste-map-node-core"
-                          style={{ opacity: opacityFor(node), pointerEvents: "auto", transition: "opacity 350ms ease" }}
+                          style={{ opacity: opacityFor(node) * depthOpacity, pointerEvents: "auto", transition: "opacity 350ms ease" }}
                           title={node.id}
                         />
                       )}
-                      <NodeLabel cx={node.x ?? 0} cy={(node.y ?? 0) + r + 24} text={node.id} />
+                      <NodeLabel cx={0} cy={r + 24} text={node.id} />
                     </g>
                   </g>
                 );

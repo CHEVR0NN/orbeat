@@ -63,7 +63,7 @@ body::after {
   position: absolute;
   top: 1rem;
   right: 1rem;
-  background: rgba(14, 11, 22, 0.9);
+  background: var(--bg-card);
   border: 2px solid var(--accent-cyan);
   border-radius: 10px;
   box-shadow:
@@ -81,7 +81,7 @@ body::after {
   font-family: var(--font-display);
   font-size: 1.1rem;
   color: var(--accent-yellow);
-  text-shadow: 1px 1px 0px var(--accent-cyan), 2px 2px 0px var(--accent-yellow), 3px 3px 0px #000, 0 0 12px rgba(255, 255, 255, 0.45);
+  text-shadow: 0 0 8px rgba(255, 184, 48, 0.6);
 }
 
 .node-detail p {
@@ -221,7 +221,7 @@ body::after {
 }
 
 .profile-card {
-  width: 300px;
+  width: 340px;
   flex-shrink: 0;
   position: relative;
   background: var(--card-bg);
@@ -237,6 +237,7 @@ body::after {
   flex-direction: column;
   overflow-y: auto;
   --profile-stamp-bg: color-mix(in srgb, var(--accent-coral) 70%, var(--bg-space-dark));
+  --sidebar-pad: 18px;
 }
 
 /* 0. Top edge: alternating flag/washi-tape strip */
@@ -313,7 +314,7 @@ body::after {
   background: var(--bg-space-dark);
   color: var(--text-white);
   border-top: 1px dashed rgba(255, 255, 255, 0.15);
-  padding: 0.85rem 1.1rem 1rem;
+  padding: 0.85rem var(--sidebar-pad) 1rem;
 }
 
 .profile-card-identity-header {
@@ -330,8 +331,8 @@ body::after {
   color: var(--card-text);
   border-radius: 14px;
   padding: 0.7rem 0.9rem;
-  transform: rotate(-2deg);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.45), 0 2px 4px rgba(0, 0, 0, 0.3);
+  transform: rotate(-1.5deg);
+  box-shadow: 4px 4px 0px #000;
 }
 
 .profile-card-avatar {
@@ -356,6 +357,7 @@ body::after {
   display: flex;
   flex-direction: column;
   gap: 0.32rem;
+  flex: 1;
   min-width: 0;
 }
 
@@ -448,8 +450,8 @@ body::after {
   text-align: center;
   background: var(--bg-space-dark);
   color: var(--text-white);
-  border-top: 1px dashed rgba(255, 255, 255, 0.15);
-  padding: 0.7rem 1.1rem;
+  border-top: 1px dashed color-mix(in srgb, var(--accent-cyan) 40%, transparent);
+  padding: 0.7rem var(--sidebar-pad);
   animation: profile-card-signal-pulse 2.4s ease-in-out infinite;
 }
 
@@ -552,8 +554,8 @@ body::after {
   gap: 0.8rem 1rem;
   background: var(--bg-space-dark);
   color: var(--text-white);
-  border-top: 1px dashed rgba(255, 255, 255, 0.15);
-  padding: 0.85rem 1.1rem;
+  border-top: 1px dashed color-mix(in srgb, var(--accent-cyan) 40%, transparent);
+  padding: 0.85rem var(--sidebar-pad);
 }
 
 .profile-card-stat {
@@ -567,7 +569,8 @@ body::after {
 .profile-card-stat dt {
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  opacity: 0.75;
+  color: var(--accent-cyan);
+  opacity: 1;
 }
 
 .profile-card-stat dd {
@@ -586,8 +589,8 @@ body::after {
   gap: 0.6rem;
   background: var(--bg-space-dark);
   color: var(--text-white);
-  border-top: 1px dashed rgba(255, 255, 255, 0.15);
-  padding: 0.85rem 1.1rem;
+  border-top: 1px dashed color-mix(in srgb, var(--accent-cyan) 40%, transparent);
+  padding: 0.85rem var(--sidebar-pad);
 }
 
 .profile-card-genres-title {
@@ -702,7 +705,7 @@ body::after {
   flex-shrink: 0;
   background: #000;
   color: var(--text-white);
-  padding: 0.8rem 1.1rem 1rem;
+  padding: 0.8rem var(--sidebar-pad) 1rem;
 }
 
 .profile-card-footer-status {
@@ -750,6 +753,7 @@ body::after {
 .profile-card-controls button {
   background: transparent;
   border: 1px solid var(--accent-cyan);
+  border-bottom: 3px solid var(--accent-yellow);
   border-radius: 6px;
   color: var(--accent-cyan);
   cursor: pointer;
@@ -762,6 +766,11 @@ body::after {
 .profile-card-controls button:hover:not(:disabled) {
   background: var(--accent-cyan);
   color: #000;
+}
+
+.profile-card-controls button:active:not(:disabled) {
+  border-bottom-width: 1px;
+  transform: translateY(2px);
 }
 
 .profile-card-controls button:disabled {

@@ -13,22 +13,21 @@ const MIN_OPACITY = 0.35;
 const GALAXY_RADIUS = Math.min(WIDTH, HEIGHT) * 0.32;
 const CANDIDATE_ORBIT_RADIUS = 180;
 
-const GALAXY_SPARKLES = [
-  { dx: -1.8, dy: -1.4, size: 6, delay: 0 },
-  { dx: 1.6, dy: -0.9, size: 4, delay: 0.6 },
-  { dx: -0.9, dy: 1.7, size: 5, delay: 1.2 },
-  { dx: 1.5, dy: 1.3, size: 3.5, delay: 1.8 },
-  { dx: -1.6, dy: 0.3, size: 3, delay: 0.9 },
-];
+const VINYL_DISC_RADIUS = 300;
+const GROOVE_RING_COUNT = 8;
+const GROOVE_MIN_RADIUS = 55;
+const GROOVE_MAX_RADIUS = 275;
+const GROOVE_RADII = Array.from({ length: GROOVE_RING_COUNT }, (_, i) =>
+  GROOVE_MIN_RADIUS + ((GROOVE_MAX_RADIUS - GROOVE_MIN_RADIUS) * i) / (GROOVE_RING_COUNT - 1)
+);
+
+const VINYL_LABEL_COLOR = "var(--accent-yellow)";
+const VINYL_BADGE_COLORS = ["var(--accent-cyan)", "var(--accent-pink)", "var(--accent-yellow)"];
 
 function galaxySeed(id: string): number {
   let s = 0;
   for (let i = 0; i < id.length; i++) s += id.charCodeAt(i);
   return s % 360;
-}
-
-function sparklePath(s: number): string {
-  return `M0,${-s} L${s * 0.22},${-s * 0.22} L${s},0 L${s * 0.22},${s * 0.22} L0,${s} L${-s * 0.22},${s * 0.22} L${-s},0 L${-s * 0.22},${-s * 0.22} Z`;
 }
 
 interface NodeShapeProps {
@@ -41,70 +40,23 @@ interface NodeShapeProps {
   title: string;
 }
 
-function PlanetWithRings({ cx, cy, r, color, className, style, title }: NodeShapeProps) {
+function VinylCenterLabel({ cx, cy, r, color, className, style, title }: NodeShapeProps) {
   return (
     <g className={className} style={style}>
       <title>{title}</title>
-      <ellipse
-        cx={cx}
-        cy={cy}
-        rx={r * 1.6}
-        ry={r * 0.35}
-        transform={`rotate(-18 ${cx} ${cy})`}
-        fill="none"
-        stroke="var(--accent-cyan)"
-        strokeWidth={1.5}
-        pointerEvents="none"
-      />
-      <circle cx={cx} cy={cy} r={r} fill={color} />
-      <circle cx={cx - r * 0.35} cy={cy - r * 0.2} r={r * 0.18} fill="#000" opacity={0.18} pointerEvents="none" />
-      <circle cx={cx + r * 0.2} cy={cy + r * 0.32} r={r * 0.12} fill="#000" opacity={0.15} pointerEvents="none" />
-      <ellipse cx={cx + r * 0.32} cy={cy - r * 0.28} rx={r * 0.14} ry={r * 0.08} fill="#000" opacity={0.12} pointerEvents="none" />
-      <path
-        d={`M ${cx},${cy - r} A ${r},${r} 0 0 1 ${cx},${cy + r} Z`}
-        fill="#000"
-        opacity={0.22}
-        pointerEvents="none"
-      />
-      <g className="taste-map-node-moon" style={{ transformOrigin: `${cx}px ${cy}px` }} pointerEvents="none">
-        <circle cx={cx + r * 1.9} cy={cy} r={Math.max(2, r * 0.2)} fill="var(--text-white)" opacity={0.85} />
-      </g>
+      <circle cx={cx} cy={cy} r={r} fill={color} stroke="#120F24" strokeWidth={2.5} />
+      <circle cx={cx} cy={cy} r={r * 0.18} fill="#000000" pointerEvents="none" />
     </g>
   );
 }
 
-function starburstPath(s: number): string {
-  return `M0,${-s} Q${s * 0.15},${-s * 0.15} ${s},0 Q${s * 0.15},${s * 0.15} 0,${s} Q${-s * 0.15},${s * 0.15} ${-s},0 Q${-s * 0.15},${-s * 0.15} 0,${-s} Z`;
-}
-
-function Starburst({ cx, cy, r, color, className, style, title }: NodeShapeProps) {
+function VinylBadge({ cx, cy, r, color, className, style, title }: NodeShapeProps) {
   return (
     <g className={className} style={style}>
       <title>{title}</title>
-      <path d={starburstPath(r)} transform={`translate(${cx}, ${cy})`} fill={color} />
-    </g>
-  );
-}
-
-function CrescentMoon({ cx, cy, r, color, className, style, title }: NodeShapeProps) {
-  return (
-    <g className={className} style={style}>
-      <title>{title}</title>
-      <circle cx={cx} cy={cy} r={r} fill={color} />
-      <circle cx={cx + r * 0.45} cy={cy - r * 0.35} r={r * 0.85} fill="var(--bg-space)" pointerEvents="none" />
-    </g>
-  );
-}
-
-function PixelStarCluster({ cx, cy, r, color, className, style, title }: NodeShapeProps) {
-  const s = Math.max(2, r * 0.5);
-  return (
-    <g className={className} style={style}>
-      <title>{title}</title>
-      <rect x={cx - s * 1.6} y={cy - s * 0.3} width={s} height={s} fill={color} />
-      <rect x={cx + s * 0.5} y={cy - s * 1.3} width={s * 0.7} height={s * 0.7} fill={color} />
-      <rect x={cx - s * 0.2} y={cy + s * 0.6} width={s * 0.6} height={s * 0.6} fill={color} />
-      <circle cx={cx + s * 0.9} cy={cy + s * 0.9} r={s * 0.35} fill={color} />
+      <circle cx={cx} cy={cy} r={r} fill={color} stroke="#120F24" strokeWidth={1.5} />
+      <circle cx={cx} cy={cy} r={r * 0.55} fill="#120F24" opacity={0.35} pointerEvents="none" />
+      <circle cx={cx} cy={cy} r={r * 0.15} fill="#120F24" pointerEvents="none" />
     </g>
   );
 }
@@ -160,22 +112,16 @@ function NodeLabel({ cx, cy, text }: { cx: number; cy: number; text: string }) {
 
 function radialPosition(index: number, count: number): { px: number; py: number } {
   const angle = index * ((2 * Math.PI) / count);
+  const radius = GROOVE_RADII[index % GROOVE_RADII.length];
   return {
-    px: CANDIDATE_ORBIT_RADIUS * Math.cos(angle),
-    py: CANDIDATE_ORBIT_RADIUS * Math.sin(angle),
+    px: radius * Math.cos(angle),
+    py: radius * Math.sin(angle),
   };
 }
 
 const ORBIT_TARGET_HALF_WIDTH = 320;
 const ORBIT_SCALE_MIN = 1.4;
 const ORBIT_SCALE_MAX = 3.4;
-
-const FLAT_COLOR_CYCLE = [
-  "var(--accent-cyan)",
-  "var(--accent-yellow)",
-  "var(--accent-pink)",
-  "var(--accent-purple)",
-];
 
 function lerp(min: number, max: number, t: number): number {
   return min + (max - min) * Math.max(0, Math.min(1, t));
@@ -296,7 +242,7 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
         .map((node) => {
           const ringIndex = ringIndexById.get(node.id)!;
           const { px, py } = radialPosition(ringIndex, visibleCount);
-          const color = FLAT_COLOR_CYCLE[ringIndex % 4];
+          const color = VINYL_BADGE_COLORS[ringIndex % VINYL_BADGE_COLORS.length];
           return {
             node,
             ringIndex,
@@ -309,6 +255,11 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
         })
         .sort((a, b) => a.ringIndex - b.ringIndex)
     : [];
+
+  const tonearmTarget =
+    zoomedGalaxyId && selectedNodeId
+      ? orbitPlanets.find((p) => p.node.id === selectedNodeId) ?? null
+      : null;
 
   return (
     <div className="taste-map-wrap">
@@ -350,7 +301,7 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
           </radialGradient>
           <radialGradient id="taste-map-bg-gradient" cx="50%" cy="50%" r="75%">
             <stop offset="0%" stopColor="#2A1236" />
-            <stop offset="70%" stopColor="#0E0B16" />
+            <stop offset="75%" stopColor="#0E0B16" />
           </radialGradient>
         </defs>
         <rect
@@ -364,13 +315,60 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
             setSelectedNodeId(null);
           }}
         />
-        <g className="taste-map-radar-grid" pointerEvents="none">
-          <circle cx={WIDTH / 2} cy={HEIGHT / 2} r={60} fill="none" className="taste-map-radar-ring" />
-          <circle cx={WIDTH / 2} cy={HEIGHT / 2} r={140} fill="none" className="taste-map-radar-ring" />
-          <circle cx={WIDTH / 2} cy={HEIGHT / 2} r={220} fill="none" className="taste-map-radar-ring" />
-          <circle cx={WIDTH / 2} cy={HEIGHT / 2} r={300} fill="none" className="taste-map-radar-ring" />
-          <line x1={0} y1={HEIGHT / 2} x2={WIDTH} y2={HEIGHT / 2} className="taste-map-radar-crosshair" />
-          <line x1={WIDTH / 2} y1={0} x2={WIDTH / 2} y2={HEIGHT} className="taste-map-radar-crosshair" />
+        <g className="taste-map-vinyl-spin" style={{ transformOrigin: `${WIDTH / 2}px ${HEIGHT / 2}px` }}>
+          <circle
+            cx={WIDTH / 2}
+            cy={HEIGHT / 2}
+            r={VINYL_DISC_RADIUS}
+            className="taste-map-vinyl-disc"
+            pointerEvents="none"
+          />
+          {GROOVE_RADII.map((r) => (
+            <circle
+              key={`groove-${r}`}
+              cx={WIDTH / 2}
+              cy={HEIGHT / 2}
+              r={r}
+              className="taste-map-vinyl-groove"
+              pointerEvents="none"
+            />
+          ))}
+          {tonearmTarget && (
+            <line
+              x1={WIDTH / 2}
+              y1={0}
+              x2={WIDTH / 2 + tonearmTarget.px}
+              y2={HEIGHT / 2 + tonearmTarget.py}
+              className="taste-map-tonearm"
+              pointerEvents="none"
+            />
+          )}
+          {zoomedGalaxyId &&
+            orbitPlanets.map(({ node, px, py, displayRadius, fill, hasPulse }) => (
+              <g key={`planet-${node.id}`}>
+                <g onClick={(e) => handleCandidateClick(e, node)} style={{ cursor: "pointer" }}>
+                  {selectedNodeId === node.id && (
+                    <SelectionBracket cx={WIDTH / 2 + px} cy={HEIGHT / 2 + py} half={displayRadius + 10} />
+                  )}
+                  <VinylBadge
+                    cx={WIDTH / 2 + px}
+                    cy={HEIGHT / 2 + py}
+                    r={displayRadius}
+                    color={fill}
+                    className={`taste-map-node-candidate${hasPulse ? " taste-map-node-pulse" : ""}`}
+                    style={{ opacity: opacityFor(node), transition: "opacity 350ms ease" }}
+                    title={node.id}
+                  />
+                </g>
+                <g
+                  className="taste-map-label-counter-spin"
+                  transform={`translate(${WIDTH / 2 + px}, ${HEIGHT / 2 + py + displayRadius + 8})`}
+                  style={{ transformOrigin: "0px 0px" }}
+                >
+                  <NodeLabel cx={0} cy={0} text={node.id} />
+                </g>
+              </g>
+            ))}
         </g>
         <g style={sceneStyle}>
           {nodes
@@ -379,22 +377,8 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
               const rank = coreRankById.get(node.id) ?? 0;
               const coreCount = coreRankById.size || 1;
               const r = coreRadiusFor(rank, coreCount);
-              const seed = galaxySeed(node.id);
               return (
                 <g key={node.id}>
-                  <g transform={`translate(${node.x}, ${node.y}) rotate(${seed})`}>
-                    {GALAXY_SPARKLES.map((sp, i) => (
-                      <path
-                        key={`sparkle-${i}`}
-                        d={sparklePath(sp.size)}
-                        transform={`translate(${r * sp.dx}, ${r * sp.dy})`}
-                        className="taste-map-galaxy-sparkle"
-                        style={{ animationDelay: `${sp.delay}s` }}
-                        fill={i % 2 === 0 ? "#ffffff" : "var(--accent-yellow)"}
-                        pointerEvents="none"
-                      />
-                    ))}
-                  </g>
                   <circle
                     className="taste-map-node-ring"
                     cx={node.x}
@@ -406,11 +390,11 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
                     <SelectionBracket cx={node.x ?? 0} cy={node.y ?? 0} half={r + 16} />
                   )}
                   <g onClick={(e) => handleCoreClick(e, node)}>
-                    <PlanetWithRings
+                    <VinylCenterLabel
                       cx={node.x ?? 0}
                       cy={node.y ?? 0}
                       r={r}
-                      color={FLAT_COLOR_CYCLE[rank % 4]}
+                      color={VINYL_LABEL_COLOR}
                       className="taste-map-node-core"
                       style={{ opacity: opacityFor(node), pointerEvents: "auto", transition: "opacity 350ms ease" }}
                       title={node.id}
@@ -420,45 +404,6 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
                 </g>
               );
             })}
-          {zoomedGalaxyId && zoomedAnchor && (
-            <g transform={`translate(${zoomedAnchor.x}, ${zoomedAnchor.y})`}>
-              {orbitPlanets.map(({ node, px, py }) => (
-                <line
-                  key={`link-${node.id}`}
-                  x1={0}
-                  y1={0}
-                  x2={px}
-                  y2={py}
-                  className="taste-map-link-line"
-                  pointerEvents="none"
-                />
-              ))}
-              {orbitPlanets.map(
-                ({ node, ringIndex, px, py, displayRadius, fill, hasPulse }) => {
-                  const CandidateShape = ringIndex % 3 === 0 ? Starburst : ringIndex % 3 === 1 ? CrescentMoon : PixelStarCluster;
-                  return (
-                    <g key={`planet-${node.id}`}>
-                      <g onClick={(e) => handleCandidateClick(e, node)}>
-                        {selectedNodeId === node.id && (
-                          <SelectionBracket cx={px} cy={py} half={displayRadius + 10} />
-                        )}
-                        <CandidateShape
-                          cx={px}
-                          cy={py}
-                          r={displayRadius}
-                          color={fill}
-                          className={`taste-map-node-candidate${hasPulse ? " taste-map-node-pulse" : ""}`}
-                          style={{ opacity: opacityFor(node), transition: "opacity 350ms ease" }}
-                          title={node.id}
-                        />
-                        <NodeLabel cx={px} cy={py + displayRadius + 8} text={node.id} />
-                      </g>
-                    </g>
-                  );
-                }
-              )}
-            </g>
-          )}
         </g>
         <rect
           x={0}

@@ -50,18 +50,64 @@
   box-shadow: 2px 2px 0px var(--accent-pink), 4px 4px 0px rgba(0, 0, 0, 0.6);
 }
 
-.taste-map-radar-ring {
-  stroke: var(--accent-cyan);
-  stroke-width: 1;
-  stroke-dasharray: 2 6;
-  opacity: 0.18;
+.taste-map-vinyl-spin {
+  animation: taste-map-vinyl-spin 90s linear infinite;
 }
 
-.taste-map-radar-crosshair {
-  stroke: var(--accent-cyan);
+.taste-map-vinyl-spin:has(.taste-map-node-candidate:hover) {
+  animation-play-state: paused;
+}
+
+@keyframes taste-map-vinyl-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .taste-map-vinyl-spin {
+    animation: none;
+  }
+}
+
+.taste-map-vinyl-disc {
+  fill: #120f24;
+}
+
+.taste-map-vinyl-groove {
+  fill: none;
+  stroke: rgba(35, 229, 216, 0.25);
   stroke-width: 1;
-  stroke-dasharray: 2 6;
-  opacity: 0.14;
+  stroke-dasharray: 2 4;
+}
+
+.taste-map-tonearm {
+  stroke: var(--accent-cyan);
+  stroke-width: 2;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 4px var(--accent-cyan)) drop-shadow(0 0 10px rgba(35, 229, 216, 0.7));
+}
+
+.taste-map-label-counter-spin {
+  animation: taste-map-vinyl-spin-reverse 90s linear infinite;
+}
+
+@keyframes taste-map-vinyl-spin-reverse {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(-360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .taste-map-label-counter-spin {
+    animation: none;
+  }
 }
 
 .taste-map-node-core {
@@ -81,11 +127,6 @@
   stroke-dasharray: 4 6;
   opacity: 0.35;
   animation: taste-map-ring-pulse 4s ease-in-out infinite;
-}
-
-.taste-map-link-line {
-  stroke-dasharray: 4 4;
-  stroke: rgba(35, 229, 216, 0.4);
 }
 
 .taste-map-node-label-bg {
@@ -142,26 +183,6 @@
   }
 }
 
-.taste-map-galaxy-sparkle {
-  animation: taste-map-sparkle-twinkle 3.2s ease-in-out infinite;
-}
-
-@keyframes taste-map-sparkle-twinkle {
-  0%, 100% {
-    opacity: 0.3;
-  }
-  50% {
-    opacity: 1;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .taste-map-galaxy-sparkle {
-    animation: none;
-    opacity: 0.8;
-  }
-}
-
 .taste-map-node-pulse {
   animation: taste-map-planet-pulse 2.6s ease-in-out infinite;
 }
@@ -177,25 +198,6 @@
 
 @media (prefers-reduced-motion: reduce) {
   .taste-map-node-pulse {
-    animation: none;
-  }
-}
-
-.taste-map-node-moon {
-  animation: taste-map-moon-orbit 9s linear infinite;
-}
-
-@keyframes taste-map-moon-orbit {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .taste-map-node-moon {
     animation: none;
   }
 }
@@ -301,6 +303,6 @@
 
 @media (prefers-reduced-motion: reduce) {
   .taste-map-decor-icon {
-    animation: none;
+    animation: none !important;
   }
 }

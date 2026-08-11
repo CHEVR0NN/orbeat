@@ -51,14 +51,12 @@
 }
 
 .taste-map-node-core {
-  stroke: var(--accent-coral);
-  stroke-width: 3;
+  stroke: none;
   cursor: grab;
 }
 
 .taste-map-node-candidate {
-  stroke: var(--accent-cyan);
-  stroke-width: 1;
+  stroke: none;
   cursor: grab;
 }
 
@@ -68,7 +66,7 @@
 
 .taste-map-node-ring {
   fill: none;
-  stroke: var(--accent-coral);
+  stroke: var(--accent-cyan);
   stroke-width: 1.5;
   stroke-dasharray: 4 6;
   opacity: 0.35;
@@ -80,6 +78,25 @@
   stroke: var(--accent-cyan);
   stroke-width: 1;
   stroke-dasharray: 3 5;
+}
+
+.taste-map-link-line {
+  stroke-dasharray: 4 4;
+  stroke: rgba(35, 229, 216, 0.4);
+}
+
+.taste-map-node-tooltip {
+  background: var(--bg-card);
+  color: var(--accent-cyan);
+  border: 1px solid var(--accent-cyan);
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-family: var(--font-hud);
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
 }
 
 @keyframes taste-map-ring-pulse {
@@ -149,7 +166,7 @@
 
 .taste-map-decor-icon {
   position: absolute;
-  opacity: 0.45;
+  opacity: 0.6;
 }
 
 .taste-map-decor-1 {
@@ -175,7 +192,7 @@
   left: 6%;
   width: 26px;
   height: 26px;
-  color: var(--accent-pink);
+  color: var(--accent-cyan);
   animation: taste-map-decor-float 11s ease-in-out infinite alternate;
 }
 
@@ -190,11 +207,11 @@
 
 @keyframes taste-map-decor-pulse {
   from {
-    opacity: 0.3;
+    opacity: 0.5;
     transform: scale(0.92);
   }
   to {
-    opacity: 0.55;
+    opacity: 0.75;
     transform: scale(1.05);
   }
 }

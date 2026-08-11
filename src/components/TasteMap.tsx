@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type MouseEvent, type PointerEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent, type PointerEvent } from "react";
 import { Star, Zap } from "lucide-react";
 import {
   forceSimulation,
@@ -24,14 +24,6 @@ const MAX_LINK_DISTANCE = 240;
 const MIN_LINK_DISTANCE = 70;
 const GALAXY_RADIUS = Math.min(WIDTH, HEIGHT) * 0.32;
 
-const GALAXY_WISPS = [
-  { dx: -0.5, dy: -0.9, rxMul: 2.4, ryMul: 0.95, rot: -25, warm: false, opacity: 0.55 },
-  { dx: 0.8, dy: 0.3, rxMul: 2.6, ryMul: 0.9, rot: 40, warm: true, opacity: 0.5 },
-  { dx: -0.9, dy: 0.6, rxMul: 2.2, ryMul: 0.8, rot: 80, warm: false, opacity: 0.45 },
-  { dx: 0.3, dy: -1.0, rxMul: 1.9, ryMul: 0.65, rot: -60, warm: true, opacity: 0.5 },
-  { dx: -0.2, dy: 0.95, rxMul: 2.3, ryMul: 0.75, rot: 15, warm: false, opacity: 0.4 },
-];
-
 const GALAXY_SPARKLES = [
   { dx: -1.8, dy: -1.4, size: 6, delay: 0 },
   { dx: 1.6, dy: -0.9, size: 4, delay: 0.6 },
@@ -50,6 +42,74 @@ function sparklePath(s: number): string {
   return `M0,${-s} L${s * 0.22},${-s * 0.22} L${s},0 L${s * 0.22},${s * 0.22} L0,${s} L${-s * 0.22},${s * 0.22} L${-s},0 L${-s * 0.22},${-s * 0.22} Z`;
 }
 
+interface NodeShapeProps {
+  cx: number;
+  cy: number;
+  r: number;
+  color: string;
+  className: string;
+  style: CSSProperties;
+  title: string;
+}
+
+function PlanetWithRings({ cx, cy, r, color, className, style, title }: NodeShapeProps) {
+  return (
+    <g className={className} style={style}>
+      <title>{title}</title>
+      <ellipse
+        cx={cx}
+        cy={cy}
+        rx={r * 1.6}
+        ry={r * 0.35}
+        transform={`rotate(-18 ${cx} ${cy})`}
+        fill="none"
+        stroke="var(--accent-cyan)"
+        strokeWidth={1.5}
+        pointerEvents="none"
+      />
+      <circle cx={cx} cy={cy} r={r} fill={color} />
+      <path
+        d={`M ${cx},${cy - r} A ${r},${r} 0 0 1 ${cx},${cy + r} Z`}
+        fill="#000"
+        opacity={0.22}
+        pointerEvents="none"
+      />
+    </g>
+  );
+}
+
+function starburstPath(s: number): string {
+  return `M0,${-s} Q${s * 0.15},${-s * 0.15} ${s},0 Q${s * 0.15},${s * 0.15} 0,${s} Q${-s * 0.15},${s * 0.15} ${-s},0 Q${-s * 0.15},${-s * 0.15} 0,${-s} Z`;
+}
+
+function Starburst({ cx, cy, r, color, className, style, title }: NodeShapeProps) {
+  return (
+    <g className={className} style={style}>
+      <title>{title}</title>
+      <path d={starburstPath(r)} transform={`translate(${cx}, ${cy})`} fill={color} />
+    </g>
+  );
+}
+
+function CrescentMoon({ cx, cy, r, color, className, style, title }: NodeShapeProps) {
+  return (
+    <g className={className} style={style}>
+      <title>{title}</title>
+      <circle cx={cx} cy={cy} r={r} fill={color} />
+      <circle cx={cx + r * 0.45} cy={cy - r * 0.35} r={r * 0.85} fill="var(--bg-space)" pointerEvents="none" />
+    </g>
+  );
+}
+
+function SolidDot({ cx, cy, r, color, className, style, title }: NodeShapeProps) {
+  return (
+    <g className={className} style={style}>
+      <title>{title}</title>
+      <circle cx={cx} cy={cy} r={r} fill={color} />
+    </g>
+  );
+}
+
 const ORBIT_INNER_RX = 55;
 const ORBIT_INNER_RY = 20;
 const ORBIT_RING_STEP_RX = 26;
@@ -61,11 +121,13 @@ const ORBIT_SCALE_MIN = 1.4;
 const ORBIT_SCALE_MAX = 3.4;
 const ORBIT_AUTO_SPIN_BASE_DEG_PER_SEC = 14;
 
-const CANDIDATE_COLOR_CYCLE = [
-  { gradientId: "taste-map-node-candidate-fill", accentVar: "var(--accent-pink)" },
-  { gradientId: "taste-map-node-candidate-fill-yellow", accentVar: "var(--accent-yellow)" },
-  { gradientId: "taste-map-node-candidate-fill-coral", accentVar: "var(--accent-coral)" },
-  { gradientId: "taste-map-node-candidate-fill-teal", accentVar: "var(--accent-cyan)" },
+const XHTML_NS = { xmlns: "http://www.w3.org/1999/xhtml" };
+
+const FLAT_COLOR_CYCLE = [
+  "var(--accent-cyan)",
+  "var(--accent-yellow)",
+  "var(--accent-pink)",
+  "var(--accent-purple)",
 ];
 
 function lerp(min: number, max: number, t: number): number {
@@ -122,6 +184,8 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
   const [nodes, setNodes] = useState<SimNode[]>([]);
   const [zoomedGalaxyId, setZoomedGalaxyId] = useState<string | null>(null);
   const [orbitAngleOverrides, setOrbitAngleOverrides] = useState<Map<string, number>>(new Map());
+  const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const draggingId = useRef<string | null>(null);
   const draggingOrbitId = useRef<string | null>(null);
   const simulationRef = useRef<ReturnType<typeof forceSimulation<SimNode>> | null>(null);
@@ -274,18 +338,20 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
     simulationRef.current?.alphaTarget(0);
   }
 
-  function handleCoreClick(e: MouseEvent<SVGCircleElement>, node: SimNode) {
+  function handleCoreClick(e: MouseEvent<SVGGElement>, node: SimNode) {
     e.stopPropagation();
     onSelectNode(node);
     setZoomedGalaxyId(node.id);
+    setSelectedNodeId(node.id);
   }
 
-  function handleCandidateClick(e: MouseEvent<SVGCircleElement>, node: SimNode) {
+  function handleCandidateClick(e: MouseEvent<SVGGElement>, node: SimNode) {
     e.stopPropagation();
     onSelectNode(node);
+    setSelectedNodeId(node.id);
   }
 
-  function handleOrbitPointerDown(e: PointerEvent<SVGCircleElement>, node: SimNode) {
+  function handleOrbitPointerDown(e: PointerEvent<SVGGElement>, node: SimNode) {
     e.stopPropagation();
     draggingOrbitId.current = node.id;
   }
@@ -341,8 +407,7 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
         .map((node) => {
           const ringIndex = ringIndexById.get(node.id)!;
           const { px, py } = orbitPosition(ringIndex, orbitAngleOverrides.get(node.id));
-          const color = CANDIDATE_COLOR_CYCLE[ringIndex % 4];
-          const style = ringIndex % 3;
+          const color = FLAT_COLOR_CYCLE[ringIndex % 4];
           return {
             node,
             ringIndex,
@@ -351,10 +416,8 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
             px,
             py,
             displayRadius: Math.max(4, radiusFor(node) + sizeJitter(ringIndex)),
-            gradientId: color.gradientId,
-            accentVar: color.accentVar,
-            hasAccessory: style === 1,
-            hasPulse: style === 2,
+            fill: color,
+            hasPulse: ringIndex % 3 === 2,
           };
         })
         .sort((a, b) => a.ringIndex - b.ringIndex)
@@ -389,53 +452,6 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
         onPointerLeave={handlePointerUp}
       >
         <defs>
-          <radialGradient id="taste-map-bg" cx="50%" cy="45%" r="75%">
-            <stop offset="0%" stopColor="#241a3d" />
-            <stop offset="100%" stopColor="var(--bg-space)" />
-          </radialGradient>
-          <radialGradient id="taste-map-node-candidate-fill" cx="35%" cy="30%" r="70%">
-            <stop offset="0%" stopColor="var(--accent-pink)" />
-            <stop offset="100%" stopColor="var(--bg-space-dark)" />
-          </radialGradient>
-          <radialGradient id="taste-map-node-candidate-fill-yellow" cx="35%" cy="30%" r="70%">
-            <stop offset="0%" stopColor="var(--accent-yellow)" />
-            <stop offset="100%" stopColor="var(--bg-space-dark)" />
-          </radialGradient>
-          <radialGradient id="taste-map-node-candidate-fill-coral" cx="35%" cy="30%" r="70%">
-            <stop offset="0%" stopColor="var(--accent-coral)" />
-            <stop offset="100%" stopColor="var(--bg-space-dark)" />
-          </radialGradient>
-          <radialGradient id="taste-map-node-candidate-fill-teal" cx="35%" cy="30%" r="70%">
-            <stop offset="0%" stopColor="color-mix(in srgb, var(--accent-cyan) 55%, var(--bg-space-dark))" />
-            <stop offset="100%" stopColor="var(--bg-space-dark)" />
-          </radialGradient>
-          <filter id="taste-map-glow-core" x="-100%" y="-100%" width="300%" height="300%">
-            <feGaussianBlur in="SourceGraphic" stdDeviation="1.4" result="blur" />
-            <feMerge>
-              <feMergeNode in="blur" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
-          <filter id="taste-map-glow-candidate" x="-100%" y="-100%" width="300%" height="300%">
-            <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="blur" />
-            <feMerge>
-              <feMergeNode in="blur" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
-          <radialGradient id="taste-map-galaxy-haze" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor="rgba(35, 229, 216, 0.75)" />
-            <stop offset="60%" stopColor="rgba(232, 146, 232, 0.4)" />
-            <stop offset="100%" stopColor="rgba(35, 229, 216, 0)" />
-          </radialGradient>
-          <filter id="taste-map-galaxy-haze-blur" x="-60%" y="-60%" width="220%" height="220%">
-            <feGaussianBlur in="SourceGraphic" stdDeviation="4.5" />
-          </filter>
-          <radialGradient id="taste-map-galaxy-haze-warm" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor="rgba(255, 184, 48, 0.7)" />
-            <stop offset="60%" stopColor="rgba(255, 73, 124, 0.38)" />
-            <stop offset="100%" stopColor="rgba(255, 184, 48, 0)" />
-          </radialGradient>
           <radialGradient id="taste-map-vignette" cx="50%" cy="50%" r="70%">
             <stop offset="0%" stopColor="rgba(0, 0, 0, 0)" />
             <stop offset="70%" stopColor="rgba(0, 0, 0, 0)" />
@@ -447,8 +463,11 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
           y={0}
           width={WIDTH}
           height={HEIGHT}
-          fill="url(#taste-map-bg)"
-          onClick={() => setZoomedGalaxyId(null)}
+          fill="var(--bg-space)"
+          onClick={() => {
+            setZoomedGalaxyId(null);
+            setSelectedNodeId(null);
+          }}
         />
         <g className="taste-map-radar-grid" pointerEvents="none">
           <circle cx={WIDTH / 2} cy={HEIGHT / 2} r={60} fill="none" className="taste-map-radar-ring" />
@@ -466,27 +485,9 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
               const coreCount = coreRankById.size || 1;
               const r = coreRadiusFor(rank, coreCount);
               const seed = galaxySeed(node.id);
-              const flipWarm = seed % 2 === 1;
               return (
                 <g key={node.id}>
                   <g transform={`translate(${node.x}, ${node.y}) rotate(${seed})`}>
-                    {GALAXY_WISPS.map((w, i) => {
-                      const isWarm = flipWarm ? !w.warm : w.warm;
-                      return (
-                        <ellipse
-                          key={`wisp-${i}`}
-                          cx={r * w.dx}
-                          cy={r * w.dy}
-                          rx={r * w.rxMul}
-                          ry={r * w.ryMul}
-                          transform={`rotate(${w.rot} ${r * w.dx} ${r * w.dy})`}
-                          fill={isWarm ? "url(#taste-map-galaxy-haze-warm)" : "url(#taste-map-galaxy-haze)"}
-                          filter="url(#taste-map-galaxy-haze-blur)"
-                          opacity={w.opacity}
-                          pointerEvents="none"
-                        />
-                      );
-                    })}
                     {GALAXY_SPARKLES.map((sp, i) => (
                       <path
                         key={`sparkle-${i}`}
@@ -506,29 +507,51 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
                     r={r + 12}
                     pointerEvents="none"
                   />
-                  <circle
-                    cx={node.x}
-                    cy={node.y}
-                    r={r}
-                    className="taste-map-node-core"
-                    fill={`url(#${CANDIDATE_COLOR_CYCLE[rank % 4].gradientId})`}
-                    filter="url(#taste-map-glow-core)"
-                    style={{
-                      opacity: opacityFor(node),
-                      pointerEvents: "auto",
-                      stroke: CANDIDATE_COLOR_CYCLE[rank % 4].accentVar,
-                      transition: "opacity 350ms ease, filter 200ms ease",
-                    }}
+                  <g
                     onPointerDown={() => handlePointerDown(node)}
                     onClick={(e) => handleCoreClick(e, node)}
+                    onPointerEnter={() => setHoveredNodeId(node.id)}
+                    onPointerLeave={() => setHoveredNodeId((id) => (id === node.id ? null : id))}
                   >
-                    <title>{node.id}</title>
-                  </circle>
+                    <PlanetWithRings
+                      cx={node.x ?? 0}
+                      cy={node.y ?? 0}
+                      r={r}
+                      color={FLAT_COLOR_CYCLE[rank % 4]}
+                      className="taste-map-node-core"
+                      style={{ opacity: opacityFor(node), pointerEvents: "auto", transition: "opacity 350ms ease" }}
+                      title={node.id}
+                    />
+                    {(hoveredNodeId === node.id || selectedNodeId === node.id) && zoomedGalaxyId !== node.id && (
+                      <foreignObject
+                        x={(node.x ?? 0) - 85}
+                        y={(node.y ?? 0) - r - 30}
+                        width={170}
+                        height={24}
+                        pointerEvents="none"
+                      >
+                        <div {...XHTML_NS} className="taste-map-node-tooltip">
+                          {node.id}
+                        </div>
+                      </foreignObject>
+                    )}
+                  </g>
                 </g>
               );
             })}
           {zoomedGalaxyId && zoomedAnchor && (
             <g transform={`translate(${zoomedAnchor.x}, ${zoomedAnchor.y}) rotate(${ORBIT_TILT_DEG})`}>
+              {orbitPlanets.map(({ node, px, py }) => (
+                <line
+                  key={`link-${node.id}`}
+                  x1={0}
+                  y1={0}
+                  x2={px}
+                  y2={py}
+                  className="taste-map-link-line"
+                  pointerEvents="none"
+                />
+              ))}
               {orbitPlanets.map(({ node, rx, ry, ringIndex }) => (
                 <ellipse
                   key={`ring-${node.id}`}
@@ -544,50 +567,39 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
                 />
               ))}
               {orbitPlanets.map(
-                ({ node, px, py, displayRadius, gradientId, accentVar, hasAccessory, hasPulse, ringIndex }) => (
-                <g key={`planet-${node.id}`}>
-                  <ellipse
-                    cx={px}
-                    cy={py + displayRadius * 0.75}
-                    rx={displayRadius * 0.9}
-                    ry={displayRadius * 0.28}
-                    fill="rgba(0, 0, 0, 0.35)"
-                    filter="url(#taste-map-galaxy-haze-blur)"
-                    pointerEvents="none"
-                  />
-                  {hasAccessory && (
-                    <g transform={`translate(${px}, ${py}) rotate(25)`}>
-                      <ellipse
-                        cx={0}
-                        cy={0}
-                        rx={radiusFor(node) * 1.7}
-                        ry={radiusFor(node) * 0.5}
-                        fill="none"
-                        stroke={accentVar}
-                        strokeWidth={1.5}
-                        opacity={0.5}
-                        pointerEvents="none"
-                      />
+                ({ node, ringIndex, px, py, displayRadius, fill, hasPulse }) => {
+                  const CandidateShape = ringIndex % 3 === 0 ? Starburst : ringIndex % 3 === 1 ? CrescentMoon : SolidDot;
+                  return (
+                    <g key={`planet-${node.id}`}>
+                      <g
+                        onPointerDown={(e) => handleOrbitPointerDown(e, node)}
+                        onClick={(e) => handleCandidateClick(e, node)}
+                        onPointerEnter={() => setHoveredNodeId(node.id)}
+                        onPointerLeave={() => setHoveredNodeId((id) => (id === node.id ? null : id))}
+                      >
+                        <CandidateShape
+                          cx={px}
+                          cy={py}
+                          r={displayRadius}
+                          color={fill}
+                          className={`taste-map-node-candidate${hasPulse ? " taste-map-node-pulse" : ""}`}
+                          style={{ opacity: opacityFor(node), transition: "opacity 350ms ease" }}
+                          title={node.id}
+                        />
+                        {(hoveredNodeId === node.id || selectedNodeId === node.id) && (
+                          <g transform={`translate(${px}, ${py - displayRadius - 26}) rotate(${-ORBIT_TILT_DEG})`}>
+                            <foreignObject x={-70} y={0} width={140} height={24} pointerEvents="none">
+                              <div {...XHTML_NS} className="taste-map-node-tooltip">
+                                {node.id}
+                              </div>
+                            </foreignObject>
+                          </g>
+                        )}
+                      </g>
                     </g>
-                  )}
-                  <circle
-                    cx={px}
-                    cy={py}
-                    r={displayRadius}
-                    className={`taste-map-node-candidate${hasPulse ? " taste-map-node-pulse" : ""}`}
-                    fill={`url(#${gradientId})`}
-                    style={{
-                      opacity: opacityFor(node),
-                      filter: `url(#taste-map-glow-candidate) blur(${lerp(0, 1.4, visibleCount > 1 ? ringIndex / (visibleCount - 1) : 0)}px)`,
-                      transition: "opacity 350ms ease, filter 200ms ease",
-                    }}
-                    onPointerDown={(e) => handleOrbitPointerDown(e, node)}
-                    onClick={(e) => handleCandidateClick(e, node)}
-                  >
-                    <title>{node.id}</title>
-                  </circle>
-                </g>
-              ))}
+                  );
+                }
+              )}
             </g>
           )}
         </g>

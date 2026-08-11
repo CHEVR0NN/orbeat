@@ -9,6 +9,7 @@
   --accent-yellow: #ffb830;
   --accent-pink: #e892e8;
   --accent-coral: #ff497c;
+  --accent-purple: #a855f7;
   --text-white: #ffffff;
 
   --font-display: "Bungee", "Rubik Mono One", system-ui, sans-serif;
@@ -219,6 +220,10 @@ body::after {
   position: relative;
   flex: 1;
   min-width: 0;
+  border-radius: 20px;
+  margin: 12px;
+  overflow: hidden;
+  box-shadow: inset 0 0 80px #000, 0 0 0 4px var(--accent-cyan);
 }
 
 .profile-card {

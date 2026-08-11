@@ -403,7 +403,10 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
     // orbit motion added below animates angle only, using the radius this
     // resolves -- it does not re-run collision.)
     forceSimulation(simNodes)
-      .force("collide", forceCollide<SimNode>((d) => radiusFor(d) + COLLIDE_PADDING))
+      .force("collide", forceCollide<SimNode>((d) => {
+        const labelHalfWidth = Math.max(36, d.id.length * 6.2 + 16) / 2;
+        return Math.max(radiusFor(d) + COLLIDE_PADDING, labelHalfWidth + COLLIDE_PADDING);
+      }))
       .stop()
       .tick(COLLIDE_TICKS);
     return simNodes
@@ -662,7 +665,7 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
             })}
           <g style={sceneStyle}>
             {nodes
-              .filter((node) => node.kind === "core")
+              .filter((node) => node.kind === "core" && (!zoomedGalaxyId || node.id === zoomedGalaxyId))
               .map((node) => {
                 const rank = coreRankById.get(node.id) ?? 0;
                 const coreCount = coreRankById.size || 1;
@@ -713,7 +716,7 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
                           title={node.id}
                         />
                       )}
-                      <NodeLabel cx={node.x ?? 0} cy={(node.y ?? 0) + r + 8} text={node.id} />
+                      <NodeLabel cx={node.x ?? 0} cy={(node.y ?? 0) + r + 24} text={node.id} />
                     </g>
                   </g>
                 );

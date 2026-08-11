@@ -64,6 +64,7 @@ body::after {
   position: absolute;
   top: 1rem;
   right: 1rem;
+  z-index: 2;
   background: var(--bg-card);
   border: 2px solid var(--accent-cyan);
   border-radius: 10px;

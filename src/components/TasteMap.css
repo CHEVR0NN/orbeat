@@ -51,7 +51,7 @@
 }
 
 .taste-map-vinyl-tilt {
-  transform: perspective(1000px) rotateX(60deg);
+  transform: perspective(1000px) rotateX(var(--vinyl-tilt));
 }
 
 .taste-map-vinyl-spin {

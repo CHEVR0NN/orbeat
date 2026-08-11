@@ -15,6 +15,12 @@ const GALAXY_RADIUS = Math.min(WIDTH, HEIGHT) * 0.32;
 const CANDIDATE_ORBIT_RADIUS = 180;
 
 const VINYL_DISC_RADIUS = 300;
+const VINYL_TILT_DEG = 60;
+// Derives the node layer's Y-projection squash from the same tilt angle the
+// CSS `.taste-map-vinyl-tilt` group rotates by, so the flat/untilted node
+// layer's approximated foreshortening can't drift out of sync with the
+// actual tilted platter's visual foreshortening again.
+const VINYL_TILT_PROJECTION = Math.cos((VINYL_TILT_DEG * Math.PI) / 180);
 const GROOVE_RING_COUNT = 8;
 // Minimum groove radius kept >= 130px so orbiting nodes never visually
 // collide with the center spindle label; max radius left as-is (still
@@ -456,7 +462,7 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
         const el = nodeElsRef.current.get(id);
         if (el) {
           const x = WIDTH / 2 + state.radius * Math.cos(state.angle);
-          const y = HEIGHT / 2 + state.radius * Math.sin(state.angle) * 0.42;
+          const y = HEIGHT / 2 + state.radius * Math.sin(state.angle) * VINYL_TILT_PROJECTION;
           el.setAttribute("transform", `translate(${x}, ${y})`);
         }
       });
@@ -464,7 +470,7 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
         const target = orbitStateRef.current.get(selectedNodeId);
         if (target) {
           const x = WIDTH / 2 + target.radius * Math.cos(target.angle);
-          const y = HEIGHT / 2 + target.radius * Math.sin(target.angle) * 0.42;
+          const y = HEIGHT / 2 + target.radius * Math.sin(target.angle) * VINYL_TILT_PROJECTION;
           tonearmElRef.current.setAttribute("x2", String(x));
           tonearmElRef.current.setAttribute("y2", String(y));
         }
@@ -558,7 +564,10 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
           }}
         />
         <g className="taste-map-scene">
-          <g className="taste-map-vinyl-tilt" style={{ transformOrigin: `${WIDTH / 2}px ${HEIGHT / 2}px` }}>
+          <g
+            className="taste-map-vinyl-tilt"
+            style={{ transformOrigin: `${WIDTH / 2}px ${HEIGHT / 2}px`, "--vinyl-tilt": `${VINYL_TILT_DEG}deg` } as CSSProperties}
+          >
             <g className="taste-map-vinyl-spin" style={{ transformOrigin: `${WIDTH / 2}px ${HEIGHT / 2}px` }}>
               <circle
                 cx={WIDTH / 2}
@@ -602,7 +611,7 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
               x1={WIDTH / 2}
               y1={0}
               x2={WIDTH / 2 + tonearmTargetState.radius * Math.cos(tonearmTargetState.angle)}
-              y2={HEIGHT / 2 + tonearmTargetState.radius * Math.sin(tonearmTargetState.angle) * 0.42}
+              y2={HEIGHT / 2 + tonearmTargetState.radius * Math.sin(tonearmTargetState.angle) * VINYL_TILT_PROJECTION}
               className="taste-map-tonearm"
               pointerEvents="none"
             />
@@ -611,7 +620,7 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
             orbitPlanets.map(({ node, ringIndex, radius, angle, displayRadius, fill, fillUrl, depthOpacity, hasPulse, labelOffset }) => {
               const PlanetShape = PLANET_SHAPES[ringIndex % PLANET_SHAPES.length];
               const initialX = WIDTH / 2 + radius * Math.cos(angle);
-              const initialY = HEIGHT / 2 + radius * Math.sin(angle) * 0.42;
+              const initialY = HEIGHT / 2 + radius * Math.sin(angle) * VINYL_TILT_PROJECTION;
               return (
                 <g
                   key={`planet-${node.id}`}

@@ -46,6 +46,10 @@
   cursor: grab;
 }
 
+.taste-map-node-candidate:active {
+  cursor: grabbing;
+}
+
 .taste-map-node-ring {
   fill: none;
   stroke: var(--accent-coral);

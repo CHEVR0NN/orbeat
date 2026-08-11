@@ -32,10 +32,20 @@ const PLANET_COLORS = [
   "var(--accent-yellow)",
   "var(--accent-purple)",
 ];
+const PLANET_GRADIENT_IDS = [
+  "taste-map-planet-grad-cyan",
+  "taste-map-planet-grad-pink",
+  "taste-map-planet-grad-yellow",
+  "taste-map-planet-grad-purple",
+];
 const COLLIDE_PADDING = 40;
 const COLLIDE_TICKS = 120;
 const LABEL_GAP = 2;
 const LABEL_STAGGER_EXTRA = 16;
+const DEPTH_SCALE_MIN = 0.7;
+const DEPTH_SCALE_MAX = 1.15;
+const DEPTH_OPACITY_MIN = 0.65;
+const DEPTH_OPACITY_MAX = 1;
 
 function galaxySeed(id: string): number {
   let s = 0;
@@ -48,6 +58,7 @@ interface NodeShapeProps {
   cy: number;
   r: number;
   color: string;
+  fillUrl?: string;
   className: string;
   style: CSSProperties;
   title: string;
@@ -63,23 +74,22 @@ function VinylCenterLabel({ cx, cy, r, color, className, style, title }: NodeSha
   );
 }
 
-function RingedPlanet({ cx, cy, r, color, className, style, title }: NodeShapeProps) {
+function RingedPlanet({ cx, cy, r, color, fillUrl, className, style, title }: NodeShapeProps) {
   return (
     <g className={className} style={style}>
       <title>{title}</title>
       <ellipse
         cx={cx}
         cy={cy}
-        rx={r * 1.7}
-        ry={r * 0.42}
-        transform={`rotate(-18 ${cx} ${cy})`}
+        rx={r * 1.6}
+        ry={r * 0.65}
         fill="none"
         stroke={color}
         strokeWidth={1.5}
         opacity={0.8}
         pointerEvents="none"
       />
-      <circle cx={cx} cy={cy} r={r} fill={color} stroke="#120F24" strokeWidth={1.5} />
+      <circle cx={cx} cy={cy} r={r} fill={fillUrl ?? color} stroke="#120F24" strokeWidth={1.5} />
       <path
         d={`M ${cx},${cy - r} A ${r},${r} 0 0 1 ${cx},${cy + r} Z`}
         fill="#000"
@@ -90,24 +100,36 @@ function RingedPlanet({ cx, cy, r, color, className, style, title }: NodeShapePr
   );
 }
 
-function CraterMoon({ cx, cy, r, color, className, style, title }: NodeShapeProps) {
+function CraterMoon({ cx, cy, r, color, fillUrl, className, style, title }: NodeShapeProps) {
   return (
     <g className={className} style={style}>
       <title>{title}</title>
-      <circle cx={cx} cy={cy} r={r} fill={color} stroke="#120F24" strokeWidth={1.5} />
+      <circle cx={cx} cy={cy} r={r} fill={fillUrl ?? color} stroke="#120F24" strokeWidth={1.5} />
       <circle cx={cx - r * 0.35} cy={cy - r * 0.2} r={r * 0.22} fill="#000" opacity={0.2} pointerEvents="none" />
       <circle cx={cx + r * 0.3} cy={cy + r * 0.3} r={r * 0.14} fill="#000" opacity={0.18} pointerEvents="none" />
+      <path
+        d={`M ${cx},${cy - r} A ${r},${r} 0 0 1 ${cx},${cy + r} Z`}
+        fill="#000"
+        opacity={0.22}
+        pointerEvents="none"
+      />
     </g>
   );
 }
 
-function GasGiant({ cx, cy, r, color, className, style, title }: NodeShapeProps) {
+function GasGiant({ cx, cy, r, color, fillUrl, className, style, title }: NodeShapeProps) {
   return (
     <g className={className} style={style}>
       <title>{title}</title>
-      <circle cx={cx} cy={cy} r={r} fill={color} stroke="#120F24" strokeWidth={1.5} />
+      <circle cx={cx} cy={cy} r={r} fill={fillUrl ?? color} stroke="#120F24" strokeWidth={1.5} />
       <ellipse cx={cx} cy={cy - r * 0.25} rx={r * 0.92} ry={r * 0.16} fill="#120F24" opacity={0.25} pointerEvents="none" />
       <ellipse cx={cx} cy={cy + r * 0.3} rx={r * 0.85} ry={r * 0.13} fill="#120F24" opacity={0.2} pointerEvents="none" />
+      <path
+        d={`M ${cx},${cy - r} A ${r},${r} 0 0 1 ${cx},${cy + r} Z`}
+        fill="#000"
+        opacity={0.22}
+        pointerEvents="none"
+      />
     </g>
   );
 }
@@ -309,17 +331,27 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
     return simNodes
       .map((node) => {
         const ringIndex = ringIndexById.get(node.id)!;
+        const px = node.x ?? 0;
+        const py = node.y ?? 0;
+        // True post-rotateX(45deg) screen position isn't readable from JS, so
+        // pre-tilt canvas Y is used as a depth proxy: bottom of canvas = near/
+        // foreground, top of canvas = far/background.
+        const depthT = clamp((HEIGHT / 2 + py) / HEIGHT, 0, 1);
+        const depthScale = lerp(DEPTH_SCALE_MIN, DEPTH_SCALE_MAX, depthT);
+        const depthOpacity = lerp(DEPTH_OPACITY_MIN, DEPTH_OPACITY_MAX, depthT);
         return {
           node,
           ringIndex,
-          px: node.x ?? 0,
-          py: node.y ?? 0,
-          displayRadius: radiusFor(node),
+          px,
+          py,
+          displayRadius: radiusFor(node) * depthScale,
+          depthOpacity,
           fill: PLANET_COLORS[ringIndex % PLANET_COLORS.length],
+          fillUrl: `url(#${PLANET_GRADIENT_IDS[ringIndex % PLANET_GRADIENT_IDS.length]})`,
           hasPulse: ringIndex % 3 === 2,
         };
       })
-      .sort((a, b) => a.ringIndex - b.ringIndex);
+      .sort((a, b) => a.py - b.py);
   }, [nodes, ringIndexById, visibleCount, zoomedGalaxyId]);
 
   const tonearmTarget =
@@ -369,6 +401,13 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
             <stop offset="0%" stopColor="#2A1236" />
             <stop offset="75%" stopColor="#0E0B16" />
           </radialGradient>
+          {PLANET_COLORS.map((color, i) => (
+            <radialGradient key={PLANET_GRADIENT_IDS[i]} id={PLANET_GRADIENT_IDS[i]} cx="35%" cy="32%" r="75%">
+              <stop offset="0%" stopColor="#ffffff" stopOpacity={0.85} />
+              <stop offset="40%" stopColor={color} stopOpacity={1} />
+              <stop offset="100%" stopColor={color} stopOpacity={1} />
+            </radialGradient>
+          ))}
         </defs>
         <rect
           x={0}
@@ -381,64 +420,69 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
             setSelectedNodeId(null);
           }}
         />
-        <g className="taste-map-vinyl-spin" style={{ transformOrigin: `${WIDTH / 2}px ${HEIGHT / 2}px` }}>
-          <circle
-            cx={WIDTH / 2}
-            cy={HEIGHT / 2}
-            r={VINYL_DISC_RADIUS}
-            className="taste-map-vinyl-disc"
-            pointerEvents="none"
-          />
-          {GROOVE_RADII.map((r) => (
+        <g className="taste-map-vinyl-tilt" style={{ transformOrigin: `${WIDTH / 2}px ${HEIGHT / 2}px` }}>
+          <g className="taste-map-vinyl-spin" style={{ transformOrigin: `${WIDTH / 2}px ${HEIGHT / 2}px` }}>
             <circle
-              key={`groove-${r}`}
               cx={WIDTH / 2}
               cy={HEIGHT / 2}
-              r={r}
-              className="taste-map-vinyl-groove"
+              r={VINYL_DISC_RADIUS}
+              className="taste-map-vinyl-disc"
               pointerEvents="none"
             />
-          ))}
-          {tonearmTarget && (
-            <line
-              x1={WIDTH / 2}
-              y1={0}
-              x2={WIDTH / 2 + tonearmTarget.px}
-              y2={HEIGHT / 2 + tonearmTarget.py}
-              className="taste-map-tonearm"
-              pointerEvents="none"
-            />
-          )}
-          {zoomedGalaxyId &&
-            orbitPlanets.map(({ node, ringIndex, px, py, displayRadius, fill, hasPulse }, i) => {
-              const PlanetShape = PLANET_SHAPES[ringIndex % PLANET_SHAPES.length];
-              const labelOffset = displayRadius + LABEL_GAP + (i % 2 === 1 ? LABEL_STAGGER_EXTRA : 0);
-              return (
-                <g key={`planet-${node.id}`}>
-                  <g onClick={(e) => handleCandidateClick(e, node)} style={{ cursor: "pointer" }}>
-                    {selectedNodeId === node.id && (
-                      <SelectionBracket cx={WIDTH / 2 + px} cy={HEIGHT / 2 + py} half={displayRadius + 10} />
-                    )}
-                    <PlanetShape
-                      cx={WIDTH / 2 + px}
-                      cy={HEIGHT / 2 + py}
-                      r={displayRadius}
-                      color={fill}
-                      className={`taste-map-node-candidate${hasPulse ? " taste-map-node-pulse" : ""}`}
-                      style={{ opacity: opacityFor(node), transition: "opacity 350ms ease" }}
-                      title={node.id}
-                    />
+            {GROOVE_RADII.map((r) => (
+              <circle
+                key={`groove-${r}`}
+                cx={WIDTH / 2}
+                cy={HEIGHT / 2}
+                r={r}
+                className="taste-map-vinyl-groove"
+                pointerEvents="none"
+              />
+            ))}
+            {tonearmTarget && (
+              <line
+                x1={WIDTH / 2}
+                y1={0}
+                x2={WIDTH / 2 + tonearmTarget.px}
+                y2={HEIGHT / 2 + tonearmTarget.py}
+                className="taste-map-tonearm"
+                pointerEvents="none"
+              />
+            )}
+            {zoomedGalaxyId &&
+              orbitPlanets.map(({ node, ringIndex, px, py, displayRadius, fill, fillUrl, depthOpacity, hasPulse }, i) => {
+                const PlanetShape = PLANET_SHAPES[ringIndex % PLANET_SHAPES.length];
+                const labelOffset = displayRadius + LABEL_GAP + (i % 2 === 1 ? LABEL_STAGGER_EXTRA : 0);
+                return (
+                  <g key={`planet-${node.id}`}>
+                    <g onClick={(e) => handleCandidateClick(e, node)} style={{ cursor: "pointer" }}>
+                      {selectedNodeId === node.id && (
+                        <SelectionBracket cx={WIDTH / 2 + px} cy={HEIGHT / 2 + py} half={displayRadius + 10} />
+                      )}
+                      <PlanetShape
+                        cx={WIDTH / 2 + px}
+                        cy={HEIGHT / 2 + py}
+                        r={displayRadius}
+                        color={fill}
+                        fillUrl={fillUrl}
+                        className={`taste-map-node-candidate${hasPulse ? " taste-map-node-pulse" : ""}`}
+                        style={{ opacity: opacityFor(node) * depthOpacity, transition: "opacity 350ms ease" }}
+                        title={node.id}
+                      />
+                    </g>
+                    <g
+                      className="taste-map-label-counter-spin"
+                      transform={`translate(${WIDTH / 2 + px}, ${HEIGHT / 2 + py + labelOffset})`}
+                      style={{ transformOrigin: "0px 0px" }}
+                    >
+                      <g style={{ transform: "rotateX(-45deg)", transformOrigin: "0px 0px" }}>
+                        <NodeLabel cx={0} cy={0} text={node.id} />
+                      </g>
+                    </g>
                   </g>
-                  <g
-                    className="taste-map-label-counter-spin"
-                    transform={`translate(${WIDTH / 2 + px}, ${HEIGHT / 2 + py + labelOffset})`}
-                    style={{ transformOrigin: "0px 0px" }}
-                  >
-                    <NodeLabel cx={0} cy={0} text={node.id} />
-                  </g>
-                </g>
-              );
-            })}
+                );
+              })}
+          </g>
         </g>
         <g style={sceneStyle}>
           {nodes

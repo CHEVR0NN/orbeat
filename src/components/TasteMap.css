@@ -50,6 +50,10 @@
   box-shadow: 2px 2px 0px var(--accent-pink), 4px 4px 0px rgba(0, 0, 0, 0.6);
 }
 
+.taste-map-vinyl-tilt {
+  transform: perspective(800px) rotateX(45deg);
+}
+
 .taste-map-vinyl-spin {
   animation: taste-map-vinyl-spin 90s linear infinite;
 }

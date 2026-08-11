@@ -1,28 +1,17 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent, type PointerEvent } from "react";
+import { useEffect, useMemo, useState, type CSSProperties, type MouseEvent } from "react";
 import { Star, Zap } from "lucide-react";
-import {
-  forceSimulation,
-  forceManyBody,
-  forceLink,
-  forceCollide,
-  forceX,
-  forceY,
-} from "d3-force";
-import type { SimulationNodeDatum, SimulationLinkDatum } from "d3-force";
 import type { Graph, GraphNode } from "../types";
 import "./TasteMap.css";
 
-type SimNode = GraphNode & SimulationNodeDatum;
-type SimLink = SimulationLinkDatum<SimNode>;
+type SimNode = GraphNode;
 
 const WIDTH = 900;
 const HEIGHT = 640;
 const MIN_RADIUS = 5;
 const MAX_RADIUS = 30;
 const MIN_OPACITY = 0.35;
-const MAX_LINK_DISTANCE = 240;
-const MIN_LINK_DISTANCE = 70;
 const GALAXY_RADIUS = Math.min(WIDTH, HEIGHT) * 0.32;
+const CANDIDATE_ORBIT_RADIUS = 180;
 
 const GALAXY_SPARKLES = [
   { dx: -1.8, dy: -1.4, size: 6, delay: 0 },
@@ -120,18 +109,66 @@ function PixelStarCluster({ cx, cy, r, color, className, style, title }: NodeSha
   );
 }
 
-const ORBIT_INNER_RX = 55;
-const ORBIT_INNER_RY = 20;
-const ORBIT_RING_STEP_RX = 26;
-const ORBIT_RING_STEP_RY = 10;
-const ORBIT_TILT_DEG = -20;
-const ORBIT_GOLDEN_ANGLE_DEG = 137.5;
+function bracketPath(cx: number, cy: number, half: number, arm: number): string {
+  const corners: [number, number, number, number][] = [
+    [cx - half, cy - half, 1, 1],
+    [cx + half, cy - half, -1, 1],
+    [cx - half, cy + half, 1, -1],
+    [cx + half, cy + half, -1, -1],
+  ];
+  return corners
+    .map(([x, y, dx, dy]) => `M${x + dx * arm},${y} L${x},${y} L${x},${y + dy * arm}`)
+    .join(" ");
+}
+
+function SelectionBracket({ cx, cy, half }: { cx: number; cy: number; half: number }) {
+  return (
+    <path
+      d={bracketPath(cx, cy, half, 10)}
+      className="taste-map-node-selection-bracket"
+      fill="none"
+      pointerEvents="none"
+    />
+  );
+}
+
+function NodeLabel({ cx, cy, text }: { cx: number; cy: number; text: string }) {
+  const width = Math.max(36, text.length * 6.2 + 16);
+  const height = 18;
+  return (
+    <g pointerEvents="none">
+      <rect
+        x={cx - width / 2}
+        y={cy}
+        width={width}
+        height={height}
+        rx={height / 2}
+        className="taste-map-node-label-bg"
+      />
+      <text
+        x={cx}
+        y={cy + height / 2}
+        className="taste-map-node-label-text"
+        textAnchor="middle"
+        dominantBaseline="central"
+      >
+        {text}
+      </text>
+    </g>
+  );
+}
+
+function radialPosition(index: number, count: number): { px: number; py: number } {
+  const angle = index * ((2 * Math.PI) / count);
+  return {
+    px: CANDIDATE_ORBIT_RADIUS * Math.cos(angle),
+    py: CANDIDATE_ORBIT_RADIUS * Math.sin(angle),
+  };
+}
+
 const ORBIT_TARGET_HALF_WIDTH = 320;
 const ORBIT_SCALE_MIN = 1.4;
 const ORBIT_SCALE_MAX = 3.4;
-const ORBIT_AUTO_SPIN_BASE_DEG_PER_SEC = 14;
-
-const XHTML_NS = { xmlns: "http://www.w3.org/1999/xhtml" };
 
 const FLAT_COLOR_CYCLE = [
   "var(--accent-cyan)",
@@ -146,27 +183,6 @@ function lerp(min: number, max: number, t: number): number {
 
 function clamp(v: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, v));
-}
-
-function orbitRx(ringIndex: number): number {
-  return ORBIT_INNER_RX + ringIndex * ORBIT_RING_STEP_RX;
-}
-
-function orbitRy(ringIndex: number): number {
-  return ORBIT_INNER_RY + ringIndex * ORBIT_RING_STEP_RY;
-}
-
-function orbitPosition(ringIndex: number, angleOverrideDeg?: number): { px: number; py: number } {
-  const angleDeg = angleOverrideDeg ?? (ringIndex * ORBIT_GOLDEN_ANGLE_DEG) % 360;
-  const angleRad = (angleDeg * Math.PI) / 180;
-  return {
-    px: orbitRx(ringIndex) * Math.cos(angleRad),
-    py: orbitRy(ringIndex) * Math.sin(angleRad),
-  };
-}
-
-function sizeJitter(ringIndex: number): number {
-  return ((ringIndex * 37) % 9) - 4;
 }
 
 function radiusFor(node: GraphNode): number {
@@ -191,14 +207,8 @@ interface TasteMapProps {
 }
 
 export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
-  const [nodes, setNodes] = useState<SimNode[]>([]);
   const [zoomedGalaxyId, setZoomedGalaxyId] = useState<string | null>(null);
-  const [orbitAngleOverrides, setOrbitAngleOverrides] = useState<Map<string, number>>(new Map());
-  const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
-  const draggingId = useRef<string | null>(null);
-  const draggingOrbitId = useRef<string | null>(null);
-  const simulationRef = useRef<ReturnType<typeof forceSimulation<SimNode>> | null>(null);
 
   const galaxyAnchors = useMemo(() => {
     const coreNodes = graph.nodes.filter((n) => n.kind === "core");
@@ -224,11 +234,6 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
     return map;
   }, [graph]);
 
-  function anchorForNode(node: SimNode): { x: number; y: number } {
-    const coreId = node.kind === "core" ? node.id : node.sourceCoreArtist;
-    return galaxyAnchors.get(coreId ?? "") ?? { x: WIDTH / 2, y: HEIGHT / 2 };
-  }
-
   const coreRankById = useMemo(() => {
     const map = new Map<string, number>();
     graph.nodes.filter((n) => n.kind === "core").forEach((n, i) => map.set(n.id, i));
@@ -247,106 +252,17 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
 
   useEffect(() => {
     setZoomedGalaxyId(null);
+  }, [graph]);
 
-    const simNodes: SimNode[] = graph.nodes.map((n) => ({ ...n }));
-    const simLinks: SimLink[] = graph.links.map((l) => ({ ...l }));
-
-    const simulation = forceSimulation(simNodes)
-      .force(
-        "link",
-        forceLink<SimNode, SimLink>(simLinks)
-          .id((d) => d.id)
-          .distance((l) => {
-            const target = l.target as SimNode;
-            return lerp(MAX_LINK_DISTANCE, MIN_LINK_DISTANCE, target.relevance);
-          })
-      )
-      .force("charge", forceManyBody().strength(-55))
-      .force("collide", forceCollide<SimNode>((d) => radiusFor(d) + 25))
-      .force(
-        "x",
-        forceX<SimNode>((d) => anchorForNode(d).x).strength((d) => (d.kind === "core" ? 0.9 : 0.22))
-      )
-      .force(
-        "y",
-        forceY<SimNode>((d) => anchorForNode(d).y).strength((d) => (d.kind === "core" ? 0.9 : 0.22))
-      );
-
-    simulationRef.current = simulation;
-
-    simulation.on("tick", () => {
-      setNodes([...simNodes]);
+  const nodes: SimNode[] = useMemo(() => {
+    return graph.nodes.map((n) => {
+      if (n.kind === "core") {
+        const anchor = galaxyAnchors.get(n.id) ?? { x: WIDTH / 2, y: HEIGHT / 2 };
+        return { ...n, x: anchor.x, y: anchor.y };
+      }
+      return { ...n };
     });
-
-    return () => {
-      simulation.stop();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [graph, galaxyAnchors]);
-
-  function handlePointerDown(node: SimNode) {
-    draggingId.current = node.id;
-    node.fx = node.x;
-    node.fy = node.y;
-    simulationRef.current?.alphaTarget(0.3).restart();
-  }
-
-  function handlePointerMove(e: PointerEvent<SVGSVGElement>) {
-    if (draggingOrbitId.current) {
-      const orbitNodeId = draggingOrbitId.current;
-      const ringIndex = ringIndexById.get(orbitNodeId);
-      if (ringIndex === undefined || !zoomedAnchor) return;
-
-      const rect = e.currentTarget.getBoundingClientRect();
-      const scaleToViewBox = Math.min(rect.width / WIDTH, rect.height / HEIGHT);
-      const letterboxX = (rect.width - WIDTH * scaleToViewBox) / 2;
-      const letterboxY = (rect.height - HEIGHT * scaleToViewBox) / 2;
-      const viewBoxX = (e.clientX - rect.left - letterboxX) / scaleToViewBox;
-      const viewBoxY = (e.clientY - rect.top - letterboxY) / scaleToViewBox;
-
-      const sceneX = (viewBoxX - tx) / scale;
-      const sceneY = (viewBoxY - ty) / scale;
-
-      const localX = sceneX - zoomedAnchor.x;
-      const localY = sceneY - zoomedAnchor.y;
-
-      const rad = (-ORBIT_TILT_DEG * Math.PI) / 180;
-      const unrotX = localX * Math.cos(rad) - localY * Math.sin(rad);
-      const unrotY = localX * Math.sin(rad) + localY * Math.cos(rad);
-
-      const rx = orbitRx(ringIndex);
-      const ry = orbitRy(ringIndex);
-      const angleRad = Math.atan2(unrotY / ry, unrotX / rx);
-      const angleDeg = (angleRad * 180) / Math.PI;
-
-      setOrbitAngleOverrides((prev) => {
-        const next = new Map(prev);
-        next.set(orbitNodeId, angleDeg);
-        return next;
-      });
-      return;
-    }
-
-    if (!draggingId.current) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    const node = nodes.find((n) => n.id === draggingId.current);
-    if (!node) return;
-    node.fx = e.clientX - rect.left;
-    node.fy = e.clientY - rect.top;
-  }
-
-  function handlePointerUp() {
-    draggingOrbitId.current = null;
-
-    if (!draggingId.current) return;
-    const node = nodes.find((n) => n.id === draggingId.current);
-    if (node) {
-      node.fx = null;
-      node.fy = null;
-    }
-    draggingId.current = null;
-    simulationRef.current?.alphaTarget(0);
-  }
 
   function handleCoreClick(e: MouseEvent<SVGGElement>, node: SimNode) {
     e.stopPropagation();
@@ -361,47 +277,10 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
     setSelectedNodeId(node.id);
   }
 
-  function handleOrbitPointerDown(e: PointerEvent<SVGGElement>, node: SimNode) {
-    e.stopPropagation();
-    draggingOrbitId.current = node.id;
-  }
-
-  useEffect(() => {
-    if (!zoomedGalaxyId || ringIndexById.size === 0) return;
-    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (reduceMotion) return;
-
-    let rafId: number;
-    let lastTime: number | null = null;
-
-    function tick(time: number) {
-      if (lastTime === null) lastTime = time;
-      const deltaSeconds = (time - lastTime) / 1000;
-      lastTime = time;
-
-      setOrbitAngleOverrides((prev) => {
-        const next = new Map(prev);
-        ringIndexById.forEach((ringIndex, nodeId) => {
-          if (draggingOrbitId.current === nodeId) return;
-          const speed = ORBIT_AUTO_SPIN_BASE_DEG_PER_SEC / (1 + ringIndex * 0.4);
-          const current = next.get(nodeId) ?? (ringIndex * ORBIT_GOLDEN_ANGLE_DEG) % 360;
-          next.set(nodeId, (current + speed * deltaSeconds) % 360);
-        });
-        return next;
-      });
-
-      rafId = requestAnimationFrame(tick);
-    }
-
-    rafId = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(rafId);
-  }, [zoomedGalaxyId, ringIndexById]);
-
   const zoomedAnchor = zoomedGalaxyId ? galaxyAnchors.get(zoomedGalaxyId) ?? null : null;
   const visibleCount = ringIndexById.size;
-  const maxOrbitRx = visibleCount > 0 ? ORBIT_INNER_RX + (visibleCount - 1) * ORBIT_RING_STEP_RX : ORBIT_INNER_RX;
   const scale = zoomedAnchor
-    ? clamp(ORBIT_TARGET_HALF_WIDTH / Math.max(maxOrbitRx, 1), ORBIT_SCALE_MIN, ORBIT_SCALE_MAX)
+    ? clamp(ORBIT_TARGET_HALF_WIDTH / CANDIDATE_ORBIT_RADIUS, ORBIT_SCALE_MIN, ORBIT_SCALE_MAX)
     : 1;
   const tx = zoomedAnchor ? WIDTH / 2 - scale * zoomedAnchor.x : 0;
   const ty = zoomedAnchor ? HEIGHT / 2 - scale * zoomedAnchor.y : 0;
@@ -416,16 +295,14 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
         .filter((n) => ringIndexById.has(n.id))
         .map((node) => {
           const ringIndex = ringIndexById.get(node.id)!;
-          const { px, py } = orbitPosition(ringIndex, orbitAngleOverrides.get(node.id));
+          const { px, py } = radialPosition(ringIndex, visibleCount);
           const color = FLAT_COLOR_CYCLE[ringIndex % 4];
           return {
             node,
             ringIndex,
-            rx: orbitRx(ringIndex),
-            ry: orbitRy(ringIndex),
             px,
             py,
-            displayRadius: Math.max(4, radiusFor(node) + sizeJitter(ringIndex)),
+            displayRadius: radiusFor(node),
             fill: color,
             hasPulse: ringIndex % 3 === 2,
           };
@@ -464,13 +341,7 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
           <circle cx="9" cy="16" r="1" fill="currentColor" />
         </svg>
       </div>
-      <svg
-        className="taste-map"
-        viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerLeave={handlePointerUp}
-      >
+      <svg className="taste-map" viewBox={`0 0 ${WIDTH} ${HEIGHT}`}>
         <defs>
           <radialGradient id="taste-map-vignette" cx="50%" cy="50%" r="70%">
             <stop offset="0%" stopColor="rgba(0, 0, 0, 0)" />
@@ -532,24 +403,9 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
                     pointerEvents="none"
                   />
                   {selectedNodeId === node.id && (
-                    <circle
-                      className="taste-map-node-selected-glow"
-                      cx={node.x}
-                      cy={node.y}
-                      r={r + 16}
-                      fill="none"
-                      stroke={FLAT_COLOR_CYCLE[rank % 4]}
-                      strokeWidth={2}
-                      style={{ transformOrigin: `${node.x ?? 0}px ${node.y ?? 0}px` }}
-                      pointerEvents="none"
-                    />
+                    <SelectionBracket cx={node.x ?? 0} cy={node.y ?? 0} half={r + 16} />
                   )}
-                  <g
-                    onPointerDown={() => handlePointerDown(node)}
-                    onClick={(e) => handleCoreClick(e, node)}
-                    onPointerEnter={() => setHoveredNodeId(node.id)}
-                    onPointerLeave={() => setHoveredNodeId((id) => (id === node.id ? null : id))}
-                  >
+                  <g onClick={(e) => handleCoreClick(e, node)}>
                     <PlanetWithRings
                       cx={node.x ?? 0}
                       cy={node.y ?? 0}
@@ -559,25 +415,13 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
                       style={{ opacity: opacityFor(node), pointerEvents: "auto", transition: "opacity 350ms ease" }}
                       title={node.id}
                     />
-                    {(hoveredNodeId === node.id || selectedNodeId === node.id) && zoomedGalaxyId !== node.id && (
-                      <foreignObject
-                        x={(node.x ?? 0) - 85}
-                        y={(node.y ?? 0) - r - 30}
-                        width={170}
-                        height={24}
-                        pointerEvents="none"
-                      >
-                        <div {...XHTML_NS} className="taste-map-node-tooltip">
-                          {node.id}
-                        </div>
-                      </foreignObject>
-                    )}
+                    <NodeLabel cx={node.x ?? 0} cy={(node.y ?? 0) + r + 8} text={node.id} />
                   </g>
                 </g>
               );
             })}
           {zoomedGalaxyId && zoomedAnchor && (
-            <g transform={`translate(${zoomedAnchor.x}, ${zoomedAnchor.y}) rotate(${ORBIT_TILT_DEG})`}>
+            <g transform={`translate(${zoomedAnchor.x}, ${zoomedAnchor.y})`}>
               {orbitPlanets.map(({ node, px, py }) => (
                 <line
                   key={`link-${node.id}`}
@@ -589,43 +433,14 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
                   pointerEvents="none"
                 />
               ))}
-              {orbitPlanets.map(({ node, rx, ry, ringIndex }) => (
-                <ellipse
-                  key={`ring-${node.id}`}
-                  cx={0}
-                  cy={0}
-                  rx={rx}
-                  ry={ry}
-                  className="taste-map-orbit-ring"
-                  style={{
-                    opacity: lerp(0.32, 0.08, visibleCount > 1 ? ringIndex / (visibleCount - 1) : 0),
-                  }}
-                  pointerEvents="none"
-                />
-              ))}
               {orbitPlanets.map(
                 ({ node, ringIndex, px, py, displayRadius, fill, hasPulse }) => {
                   const CandidateShape = ringIndex % 3 === 0 ? Starburst : ringIndex % 3 === 1 ? CrescentMoon : PixelStarCluster;
                   return (
                     <g key={`planet-${node.id}`}>
-                      <g
-                        onPointerDown={(e) => handleOrbitPointerDown(e, node)}
-                        onClick={(e) => handleCandidateClick(e, node)}
-                        onPointerEnter={() => setHoveredNodeId(node.id)}
-                        onPointerLeave={() => setHoveredNodeId((id) => (id === node.id ? null : id))}
-                      >
+                      <g onClick={(e) => handleCandidateClick(e, node)}>
                         {selectedNodeId === node.id && (
-                          <circle
-                            className="taste-map-node-selected-glow"
-                            cx={px}
-                            cy={py}
-                            r={displayRadius + 10}
-                            fill="none"
-                            stroke={fill}
-                            strokeWidth={2}
-                            style={{ transformOrigin: `${px}px ${py}px` }}
-                            pointerEvents="none"
-                          />
+                          <SelectionBracket cx={px} cy={py} half={displayRadius + 10} />
                         )}
                         <CandidateShape
                           cx={px}
@@ -636,15 +451,7 @@ export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
                           style={{ opacity: opacityFor(node), transition: "opacity 350ms ease" }}
                           title={node.id}
                         />
-                        {(hoveredNodeId === node.id || selectedNodeId === node.id) && (
-                          <g transform={`translate(${px}, ${py - displayRadius - 26}) rotate(${-ORBIT_TILT_DEG})`}>
-                            <foreignObject x={-70} y={0} width={140} height={24} pointerEvents="none">
-                              <div {...XHTML_NS} className="taste-map-node-tooltip">
-                                {node.id}
-                              </div>
-                            </foreignObject>
-                          </g>
-                        )}
+                        <NodeLabel cx={px} cy={py + displayRadius + 8} text={node.id} />
                       </g>
                     </g>
                   );

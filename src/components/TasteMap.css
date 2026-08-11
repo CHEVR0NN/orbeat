@@ -66,16 +66,12 @@
 
 .taste-map-node-core {
   stroke: none;
-  cursor: grab;
+  cursor: pointer;
 }
 
 .taste-map-node-candidate {
   stroke: none;
-  cursor: grab;
-}
-
-.taste-map-node-candidate:active {
-  cursor: grabbing;
+  cursor: pointer;
 }
 
 .taste-map-node-ring {
@@ -87,30 +83,45 @@
   animation: taste-map-ring-pulse 4s ease-in-out infinite;
 }
 
-.taste-map-orbit-ring {
-  fill: none;
-  stroke: var(--accent-cyan);
-  stroke-width: 1;
-  stroke-dasharray: 3 5;
-}
-
 .taste-map-link-line {
   stroke-dasharray: 4 4;
   stroke: rgba(35, 229, 216, 0.4);
 }
 
-.taste-map-node-tooltip {
-  background: var(--bg-card);
-  color: var(--accent-cyan);
-  border: 1px solid var(--accent-cyan);
-  border-radius: 999px;
-  padding: 2px 8px;
+.taste-map-node-label-bg {
+  fill: var(--bg-card);
+  stroke: var(--accent-cyan);
+  stroke-width: 1;
+}
+
+.taste-map-node-label-text {
+  fill: var(--accent-yellow);
   font-family: var(--font-hud);
-  font-size: 11px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  text-align: center;
+  font-size: 10px;
+}
+
+.taste-map-node-selection-bracket {
+  stroke: var(--accent-cyan);
+  stroke-width: 2;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 4px var(--accent-cyan)) drop-shadow(0 0 8px rgba(35, 229, 216, 0.6));
+  animation: taste-map-bracket-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes taste-map-bracket-pulse {
+  0%,
+  100% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .taste-map-node-selection-bracket {
+    animation: none;
+  }
 }
 
 @keyframes taste-map-ring-pulse {
@@ -185,27 +196,6 @@
 
 @media (prefers-reduced-motion: reduce) {
   .taste-map-node-moon {
-    animation: none;
-  }
-}
-
-.taste-map-node-selected-glow {
-  animation: taste-map-pulse-glow 1.6s ease-in-out infinite;
-}
-
-@keyframes taste-map-pulse-glow {
-  0%, 100% {
-    opacity: 0.35;
-    transform: scale(0.95);
-  }
-  50% {
-    opacity: 0.9;
-    transform: scale(1.15);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .taste-map-node-selected-glow {
     animation: none;
   }
 }

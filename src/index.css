@@ -754,6 +754,43 @@ body::after {
   letter-spacing: 0.05em;
 }
 
+.view-toggle {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.view-toggle-btn {
+  flex: 1;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: var(--font-hud);
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 0.45rem;
+  color: var(--accent-cyan);
+  font-weight: 700;
+  background: transparent;
+  border: 1px solid var(--accent-cyan);
+  border-bottom: 4px solid var(--accent-cyan);
+  transition: transform 120ms ease, box-shadow 150ms ease, background 150ms ease, color 150ms ease;
+}
+
+.view-toggle-btn:hover {
+  box-shadow: 0 0 12px var(--accent-cyan);
+}
+
+.view-toggle-btn.is-active {
+  background: var(--accent-cyan);
+  color: #000;
+  box-shadow: 0 0 12px var(--accent-cyan), 0 0 24px rgba(35, 229, 216, 0.5);
+}
+
+.view-toggle-btn:active {
+  border-bottom-width: 1px;
+  transform: translateY(2px);
+}
+
 .profile-card-controls {
   display: flex;
   flex-direction: column;

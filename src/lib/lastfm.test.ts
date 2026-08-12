@@ -87,12 +87,43 @@ describe("lastfm", () => {
     expect(result.image).toBeNull();
   });
 
-  it("getTopAlbums maps album name and artist name", async () => {
+  it("getTopAlbums maps album name, artist name, and largest cover image", async () => {
+    mockFetchOnce({
+      topalbums: {
+        album: [
+          {
+            name: "OK Computer",
+            artist: { name: "Radiohead" },
+            image: [
+              { size: "small", "#text": "small.jpg" },
+              { size: "extralarge", "#text": "large.jpg" },
+            ],
+          },
+        ],
+      },
+    });
+    const result = await getTopAlbums("key", "kai", 1);
+    expect(result).toEqual([{ name: "OK Computer", artist: "Radiohead", image: "large.jpg" }]);
+  });
+
+  it("getTopAlbums returns null image when the album has no cover art", async () => {
+    mockFetchOnce({
+      topalbums: {
+        album: [
+          { name: "OK Computer", artist: { name: "Radiohead" }, image: [{ size: "extralarge", "#text": "" }] },
+        ],
+      },
+    });
+    const result = await getTopAlbums("key", "kai", 1);
+    expect(result[0].image).toBeNull();
+  });
+
+  it("getTopAlbums returns null image when the image array is missing", async () => {
     mockFetchOnce({
       topalbums: { album: [{ name: "OK Computer", artist: { name: "Radiohead" } }] },
     });
     const result = await getTopAlbums("key", "kai", 1);
-    expect(result).toEqual([{ name: "OK Computer", artist: "Radiohead" }]);
+    expect(result[0].image).toBeNull();
   });
 
   it("getTopAlbums returns an empty array when the user has no scrobbled albums", async () => {

@@ -97,7 +97,11 @@ export async function getTopAlbums(
     apiKey
   );
   const albums = json.topalbums?.album ?? [];
-  return albums.map((a: any) => ({ name: a.name, artist: a.artist?.name ?? "" }));
+  return albums.map((a: any) => {
+    const images = a.image ?? [];
+    const largest = images.find((i: any) => i.size === "extralarge")?.["#text"] ?? "";
+    return { name: a.name, artist: a.artist?.name ?? "", image: largest ? largest : null };
+  });
 }
 
 export async function getRecentTracks(

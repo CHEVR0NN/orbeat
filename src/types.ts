@@ -70,6 +70,7 @@ export interface UserProfile {
 export interface TopAlbum {
   name: string;
   artist: string;
+  image: string | null;
 }
 
 export interface ProfileDataBundle {

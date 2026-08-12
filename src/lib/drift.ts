@@ -1,10 +1,32 @@
-import type { TopArtist } from "../types";
+import type { Period, TopArtist } from "../types";
 
 export interface DriftEntry {
   name: string;
   direction: "rising" | "fading";
   rankRecent: number | null;
   rankBaseline: number | null;
+}
+
+export const PERIOD_OPTIONS: { value: Period; label: string }[] = [
+  { value: "7day", label: "7 Day" },
+  { value: "1month", label: "1 Month" },
+  { value: "3month", label: "3 Month" },
+  { value: "6month", label: "6 Month" },
+  { value: "12month", label: "12 Month" },
+  { value: "overall", label: "Overall" },
+];
+
+// Whichever rank is defined displays first (baseline takes priority when
+// both are known); the second slot is either the other rank or the word
+// describing the missing side.
+export function rankReadout(entry: DriftEntry): string {
+  if (entry.rankBaseline !== null && entry.rankRecent !== null) {
+    return `#${entry.rankBaseline} → #${entry.rankRecent}`;
+  }
+  if (entry.rankBaseline !== null) {
+    return `#${entry.rankBaseline} → gone`;
+  }
+  return `#${entry.rankRecent} → new`;
 }
 
 export function computeDrift(recent: TopArtist[], baseline: TopArtist[]): DriftEntry[] {

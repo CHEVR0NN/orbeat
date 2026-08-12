@@ -385,6 +385,202 @@ body::after {
   white-space: nowrap;
 }
 
+.drift-screen {
+  height: 100%;
+  padding: 1.5rem 2rem 2.5rem;
+  overflow-y: auto;
+  font-family: var(--font-hud);
+}
+
+.drift-screen-header {
+  margin: 0 0 1.5rem;
+  color: var(--text-white);
+  font-size: 0.95rem;
+  opacity: 0.85;
+}
+
+.drift-chart {
+  margin-top: 1rem;
+}
+
+.drift-chart-empty {
+  text-align: center;
+  color: var(--text-white);
+  font-size: 0.9rem;
+  opacity: 0.85;
+  margin-top: 3rem;
+  font-family: var(--font-hud);
+}
+
+.drift-chart-legend {
+  display: flex;
+  gap: 1.25rem;
+  margin-bottom: 0.75rem;
+  font-family: var(--font-hud);
+  font-size: 0.75rem;
+  color: var(--text-white);
+}
+
+.drift-chart-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.drift-chart-legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.drift-chart-legend-dot-rising {
+  background: var(--accent-cyan);
+  box-shadow: 0 0 6px var(--accent-cyan);
+}
+
+.drift-chart-legend-dot-fading {
+  background: var(--accent-coral);
+  box-shadow: 0 0 6px var(--accent-coral);
+}
+
+.drift-chart-toggle {
+  display: block;
+  margin-bottom: 1.25rem;
+  background: transparent;
+  border: 1px solid var(--accent-cyan);
+  border-radius: 6px;
+  color: var(--accent-cyan);
+  cursor: pointer;
+  font-family: var(--font-hud);
+  font-size: 0.75rem;
+  padding: 0.4rem 0.75rem;
+  transition: box-shadow 150ms ease, background 150ms ease, color 150ms ease;
+}
+
+.drift-chart-toggle:hover {
+  background: var(--accent-cyan);
+  color: var(--bg-space);
+  box-shadow: 0 0 10px var(--accent-cyan);
+}
+
+.drift-chart-plot {
+  position: relative;
+}
+
+.drift-chart-grid {
+  position: relative;
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  align-items: center;
+  column-gap: 0.75rem;
+}
+
+.drift-chart-label {
+  height: 40px;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--accent-yellow);
+  font-family: var(--font-hud);
+  font-size: 0.8rem;
+  transition: opacity 150ms ease;
+}
+
+.drift-chart-row-svg {
+  overflow: visible;
+  transition: opacity 150ms ease;
+}
+
+.drift-chart-axis-svg {
+  overflow: visible;
+}
+
+.drift-chart-row-hit {
+  cursor: pointer;
+}
+
+.drift-chart-rank-label {
+  fill: var(--accent-yellow);
+  font-family: var(--font-hud);
+  font-size: 0.6rem;
+}
+
+.drift-chart-stub-label {
+  fill: var(--text-white);
+  font-family: var(--font-hud);
+  font-size: 0.6rem;
+  opacity: 0.75;
+}
+
+.drift-chart-axis-label {
+  fill: var(--text-white);
+  font-family: var(--font-hud);
+  font-size: 0.65rem;
+  opacity: 0.75;
+}
+
+.drift-chart-tooltip {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 4px;
+  z-index: 5;
+  background: var(--bg-card);
+  border: 2px solid var(--accent-cyan);
+  border-radius: 8px;
+  padding: 0.5rem 0.65rem;
+  font-family: var(--font-hud);
+  font-size: 0.7rem;
+  color: var(--text-white);
+  white-space: nowrap;
+  box-shadow: 0 0 10px rgba(35, 229, 216, 0.4), 0 4px 12px rgba(0, 0, 0, 0.8);
+  pointer-events: none;
+}
+
+.drift-chart-tooltip-name {
+  color: var(--accent-yellow);
+  font-weight: bold;
+  margin-bottom: 0.25rem;
+}
+
+.drift-chart-tooltip-readout {
+  margin-top: 0.25rem;
+  color: var(--accent-cyan);
+}
+
+.drift-chart-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-hud);
+  font-size: 0.8rem;
+  background: var(--bg-card);
+  border: 2px solid var(--accent-cyan);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.drift-chart-table th,
+.drift-chart-table td {
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid rgba(35, 229, 216, 0.2);
+  color: var(--text-white);
+}
+
+.drift-chart-table th {
+  color: var(--accent-cyan);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.drift-chart-table tr:last-child td {
+  border-bottom: none;
+}
+
 .settings-panel {
   max-width: 440px;
   margin: 4rem auto;

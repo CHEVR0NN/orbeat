@@ -686,6 +686,13 @@ body::after {
   height: 100vh;
 }
 
+.app-main {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
 .map-area {
   position: relative;
   flex: 1;

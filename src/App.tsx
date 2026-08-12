@@ -2,10 +2,11 @@ import { useEffect, useMemo, useState } from "react";
 import SettingsPanel from "./components/SettingsPanel";
 import TasteMap from "./components/TasteMap";
 import ProfileCard from "./components/ProfileCard";
-import DeepCutsList from "./components/DeepCutsList";
-import DriftPanel from "./components/DriftPanel";
+import DeepCutsScreen from "./components/DeepCutsScreen";
+import DriftScreen from "./components/DriftScreen";
 import LoadingAstronaut from "./components/LoadingAstronaut";
 import FloatingDecor from "./components/FloatingDecor";
+import ViewToggle from "./components/ViewToggle";
 import { readSettings, clearSettings } from "./lib/settings";
 import { fetchGraphData } from "./lib/fetchGraphData";
 import { fetchProfileData } from "./lib/fetchProfileData";
@@ -47,7 +48,6 @@ export default function App() {
   const [refreshing, setRefreshing] = useState(false);
   const [nowPlaying, setNowPlaying] = useState<NowPlayingTrack | null>(null);
   const [lens, setLens] = useState<"map" | "deepCuts" | "drift">("map");
-  const [focusNodeId, setFocusNodeId] = useState<string | null>(null);
   const [recentPeriod, setRecentPeriod] = useState<Period>("3month");
   const [baselinePeriod, setBaselinePeriod] = useState<Period>("12month");
   const [driftData, setDriftData] = useState<{ recent: TopArtist[]; baseline: TopArtist[] }>({
@@ -59,23 +59,11 @@ export default function App() {
     () => (loadState.status === "ready" ? rankDeepCuts(loadState.graph.nodes) : []),
     [loadState]
   );
-  const deepCutIds = useMemo(() => new Set(deepCuts.map((d) => d.node.id)), [deepCuts]);
 
   const driftEntries = useMemo(
     () => computeDrift(driftData.recent, driftData.baseline),
     [driftData]
   );
-  const driftByCoreId = useMemo(() => {
-    const map = new Map<string, "rising" | "fading">();
-    if (loadState.status !== "ready") return map;
-    const coreIds = new Set(
-      loadState.graph.nodes.filter((n) => n.kind === "core").map((n) => n.id)
-    );
-    driftEntries.forEach((entry) => {
-      if (coreIds.has(entry.name)) map.set(entry.name, entry.direction);
-    });
-    return map;
-  }, [driftEntries, loadState]);
 
   useEffect(() => {
     if (!settings) return;
@@ -142,15 +130,6 @@ export default function App() {
     };
   }, [settings]);
 
-  // Clears focusNodeId back to null right after TasteMap has had a chance to
-  // consume it, so clicking the same Deep Cuts row twice still re-triggers
-  // the zoom (a no-op state change wouldn't re-fire TasteMap's effect).
-  useEffect(() => {
-    if (focusNodeId === null) return;
-    const id = setTimeout(() => setFocusNodeId(null), 0);
-    return () => clearTimeout(id);
-  }, [focusNodeId]);
-
   // Fetches Drift's two-period comparison only while the Drift lens is
   // active -- no need to prefetch it while on the Map/Deep Cuts lenses.
   useEffect(() => {
@@ -171,6 +150,12 @@ export default function App() {
       cancelled = true;
     };
   }, [settings, lens, recentPeriod, baselinePeriod]);
+
+  // Clears the selected node's detail overlay when leaving the Map tab, so
+  // it isn't left open (but hidden) as stale state if the user tabs back in.
+  useEffect(() => {
+    if (lens !== "map") setSelected(null);
+  }, [lens]);
 
   async function handleRefresh() {
     if (!settings) return;
@@ -206,11 +191,6 @@ export default function App() {
     setTopAlbum(null);
     setLoadState({ status: "loading" });
     setSelected(null);
-  }
-
-  function handleDeepCutSelect(node: GraphNode) {
-    setSelected(node);
-    setFocusNodeId(node.id);
   }
 
   if (!settings) {
@@ -249,42 +229,44 @@ export default function App() {
         onRefresh={handleRefresh}
         onChangeAccount={handleChangeAccount}
         refreshing={refreshing}
-        lens={lens}
-        onLensChange={setLens}
       />
-      <div className="map-area">
-        <TasteMap
-          graph={loadState.graph}
-          onSelectNode={setSelected}
-          lens={lens}
-          deepCutIds={deepCutIds}
-          focusNodeId={focusNodeId}
-          driftByCoreId={driftByCoreId}
-        />
-        {selected ? (
-          <aside className="node-detail">
-            <h2>{selected.id}</h2>
-            <p>
-              {selected.kind === "core"
-                ? "Core artist"
-                : `Because you listen to ${selected.sourceCoreArtist}`}
-            </p>
-            <p>{selected.listeners.toLocaleString()} listeners</p>
-            {selected.match !== undefined && <p>{Math.round(selected.match * 100)}% similar</p>}
-            <button onClick={() => setSelected(null)}>Close</button>
-          </aside>
+      <div className="app-main">
+        <div className="app-tabbar">
+          <ViewToggle lens={lens} onChange={setLens} />
+        </div>
+        {lens === "map" ? (
+          <div className="map-area">
+            <TasteMap graph={loadState.graph} onSelectNode={setSelected} />
+            {selected && (
+              <aside className="node-detail">
+                <h2>{selected.id}</h2>
+                <p>
+                  {selected.kind === "core"
+                    ? "Core artist"
+                    : `Because you listen to ${selected.sourceCoreArtist}`}
+                </p>
+                <p>{selected.listeners.toLocaleString()} listeners</p>
+                {selected.match !== undefined && (
+                  <p>{Math.round(selected.match * 100)}% similar</p>
+                )}
+                <button onClick={() => setSelected(null)}>Close</button>
+              </aside>
+            )}
+          </div>
         ) : lens === "deepCuts" ? (
-          <DeepCutsList deepCuts={deepCuts} onSelect={handleDeepCutSelect} />
+          <div className="map-area">
+            <DeepCutsScreen deepCuts={deepCuts} />
+          </div>
         ) : (
-          lens === "drift" && (
-            <DriftPanel
+          <div className="map-area">
+            <DriftScreen
               entries={driftEntries}
               recentPeriod={recentPeriod}
               baselinePeriod={baselinePeriod}
               onRecentPeriodChange={setRecentPeriod}
               onBaselinePeriodChange={setBaselinePeriod}
             />
-          )
+          </div>
         )}
       </div>
     </div>

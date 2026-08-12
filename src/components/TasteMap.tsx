@@ -310,36 +310,11 @@ function opacityFor(node: GraphNode): number {
 interface TasteMapProps {
   graph: Graph;
   onSelectNode: (node: GraphNode | null) => void;
-  lens?: "map" | "deepCuts" | "drift";
-  deepCutIds?: Set<string>;
-  focusNodeId?: string | null;
-  driftByCoreId?: Map<string, "rising" | "fading">;
 }
 
-export default function TasteMap({
-  graph,
-  onSelectNode,
-  lens = "map",
-  deepCutIds,
-  focusNodeId,
-  driftByCoreId,
-}: TasteMapProps) {
+export default function TasteMap({ graph, onSelectNode }: TasteMapProps) {
   const [zoomedGalaxyId, setZoomedGalaxyId] = useState<string | null>(null);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
-
-  // Cores whose galaxy contains at least one current deep cut -- drives the
-  // brighter/pulsing aura cue in the unzoomed overview. Empty (and thus a
-  // no-op) whenever the lens isn't "deepCuts" or no deepCutIds were passed.
-  const coresWithDeepCuts = useMemo(() => {
-    const set = new Set<string>();
-    if (lens !== "deepCuts" || !deepCutIds) return set;
-    graph.nodes.forEach((n) => {
-      if (n.kind !== "core" && n.sourceCoreArtist && deepCutIds.has(n.id)) {
-        set.add(n.sourceCoreArtist);
-      }
-    });
-    return set;
-  }, [graph, deepCutIds, lens]);
 
   const galaxyAnchors = useMemo(() => {
     const coreNodes = graph.nodes.filter((n) => n.kind === "core");
@@ -403,18 +378,6 @@ export default function TasteMap({
   useEffect(() => {
     setZoomedGalaxyId(null);
   }, [graph]);
-
-  // Deep Cuts row clicks drive this via the focusNodeId prop: zoom to the
-  // clicked node's galaxy and select it, reusing the same state setters
-  // handleCoreClick already drives. onSelectNode is intentionally not
-  // called here -- App.tsx calls it separately from DeepCutsList's onSelect.
-  useEffect(() => {
-    if (!focusNodeId) return;
-    const node = graph.nodes.find((n) => n.id === focusNodeId);
-    if (!node?.sourceCoreArtist) return;
-    setZoomedGalaxyId(node.sourceCoreArtist);
-    setSelectedNodeId(focusNodeId);
-  }, [focusNodeId, graph]);
 
   const nodes: SimNode[] = useMemo(() => {
     return graph.nodes.map((n) => {
@@ -788,8 +751,6 @@ export default function TasteMap({
               const PlanetShape = PLANET_SHAPES[ringIndex % PLANET_SHAPES.length];
               const initialX = WIDTH / 2 + radius * Math.cos(angle);
               const initialY = HEIGHT / 2 + radius * Math.sin(angle) * VINYL_TILT_PROJECTION;
-              const deepCutDimMultiplier =
-                lens === "deepCuts" && deepCutIds && !deepCutIds.has(node.id) ? 0.15 : 1;
               return (
                 <g
                   key={`planet-${node.id}`}
@@ -816,7 +777,7 @@ export default function TasteMap({
                       fillUrl={fillUrl}
                       className={`taste-map-node-candidate${hasPulse ? " taste-map-node-pulse" : ""}`}
                       style={{
-                        opacity: opacityFor(node) * depthOpacity * deepCutDimMultiplier,
+                        opacity: opacityFor(node) * depthOpacity,
                         transition: "opacity 350ms ease",
                       }}
                       title={node.id}
@@ -849,10 +810,6 @@ export default function TasteMap({
                 const centerSquashStyle: CSSProperties | undefined = isZoomedCenter
                   ? { transform: `rotateX(${VINYL_TILT_DEG}deg)`, transformOrigin: "0px 0px" }
                   : undefined;
-                const hasDeepCut = !zoomedGalaxyId && coresWithDeepCuts.has(node.id);
-                const driftDirection =
-                  !zoomedGalaxyId && lens === "drift" ? driftByCoreId?.get(node.id) : undefined;
-                const driftDimMultiplier = driftDirection === "fading" ? 0.15 : 1;
                 return (
                   <g
                     key={node.id}
@@ -863,7 +820,7 @@ export default function TasteMap({
                     transform={`translate(${node.x}, ${node.y})`}
                   >
                     <circle
-                      className={`taste-map-node-glow${hasDeepCut || driftDirection === "rising" ? " taste-map-node-glow-deepcut" : ""}`}
+                      className="taste-map-node-glow"
                       cx={0}
                       cy={0}
                       r={r + 16 + (galaxySeed(node.id) % 14)}
@@ -899,7 +856,7 @@ export default function TasteMap({
                           r={r}
                           color={VINYL_LABEL_FILL}
                           className="taste-map-node-core"
-                          style={{ opacity: opacityFor(node) * depthOpacity * driftDimMultiplier, pointerEvents: "auto", transition: "opacity 350ms ease", ...centerSquashStyle }}
+                          style={{ opacity: opacityFor(node) * depthOpacity, pointerEvents: "auto", transition: "opacity 350ms ease", ...centerSquashStyle }}
                           title={node.id}
                         />
                       ) : (
@@ -910,7 +867,7 @@ export default function TasteMap({
                           color={auraColor}
                           fillUrl={`url(#${PLANET_GRADIENT_IDS[rank % PLANET_GRADIENT_IDS.length]})`}
                           className="taste-map-node-core"
-                          style={{ opacity: opacityFor(node) * depthOpacity * driftDimMultiplier, pointerEvents: "auto", transition: "opacity 350ms ease" }}
+                          style={{ opacity: opacityFor(node) * depthOpacity, pointerEvents: "auto", transition: "opacity 350ms ease" }}
                           title={node.id}
                         />
                       )}

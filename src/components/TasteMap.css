@@ -161,30 +161,6 @@
   }
 }
 
-/* Deep Cuts lens: brighter/pulsing aura cue on cores whose galaxy holds a
-   current deep cut, shown only in the unzoomed overview. */
-.taste-map-node-glow-deepcut {
-  animation: taste-map-glow-pulse-deepcut 2.4s ease-in-out infinite;
-}
-
-@keyframes taste-map-glow-pulse-deepcut {
-  0%,
-  100% {
-    opacity: 0.6;
-    transform: scale(1.05);
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1.25);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .taste-map-node-glow-deepcut {
-    animation: none;
-  }
-}
-
 .taste-map-node-pulse {
   animation: taste-map-planet-pulse 2.6s ease-in-out infinite;
 }

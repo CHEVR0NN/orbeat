@@ -22,10 +22,10 @@ export async function fetchProfileData(
     ),
     getCachedOrFetch(
       cacheKey("topAlbums", settings.username),
-      () => fetchers.getTopAlbums(settings.apiKey, settings.username, 1),
+      () => fetchers.getTopAlbums(settings.apiKey, settings.username, 10),
       forceRefresh
     ),
   ]);
 
-  return { profile, topAlbum: albums[0] ?? null };
+  return { profile, topAlbums: albums };
 }

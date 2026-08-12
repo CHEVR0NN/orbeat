@@ -75,7 +75,7 @@ export interface TopAlbum {
 
 export interface ProfileDataBundle {
   profile: UserProfile;
-  topAlbum: TopAlbum | null;
+  topAlbums: TopAlbum[];
 }
 
 export interface NowPlayingTrack {

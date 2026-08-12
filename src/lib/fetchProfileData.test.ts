@@ -7,7 +7,10 @@ function makeFetchers() {
     async (): Promise<UserProfile> => ({ name: "kai", image: "avatar.jpg", playcount: 48213 })
   );
   const getTopAlbums = vi.fn(
-    async (): Promise<TopAlbum[]> => [{ name: "OK Computer", artist: "Radiohead" }]
+    async (): Promise<TopAlbum[]> => [
+      { name: "OK Computer", artist: "Radiohead", image: "ok-computer.jpg" },
+      { name: "Selected Ambient Works 85-92", artist: "Aphex Twin", image: null },
+    ]
   );
   return { getUserInfo, getTopAlbums };
 }
@@ -17,21 +20,24 @@ describe("fetchProfileData", () => {
     localStorage.clear();
   });
 
-  it("fetches profile and top album", async () => {
+  it("fetches profile and the full top-albums list", async () => {
     const fetchers = makeFetchers();
     const settings = { apiKey: "key", username: "kai" };
     const bundle = await fetchProfileData(settings, fetchers);
 
     expect(bundle.profile).toEqual({ name: "kai", image: "avatar.jpg", playcount: 48213 });
-    expect(bundle.topAlbum).toEqual({ name: "OK Computer", artist: "Radiohead" });
+    expect(bundle.topAlbums).toEqual([
+      { name: "OK Computer", artist: "Radiohead", image: "ok-computer.jpg" },
+      { name: "Selected Ambient Works 85-92", artist: "Aphex Twin", image: null },
+    ]);
   });
 
-  it("returns null topAlbum when the user has no scrobbled albums", async () => {
+  it("returns an empty topAlbums array when the user has no scrobbled albums", async () => {
     const fetchers = makeFetchers();
     fetchers.getTopAlbums.mockResolvedValueOnce([]);
     const settings = { apiKey: "key", username: "kai" };
     const bundle = await fetchProfileData(settings, fetchers);
-    expect(bundle.topAlbum).toBeNull();
+    expect(bundle.topAlbums).toEqual([]);
   });
 
   it("reuses cached data on a second call instead of refetching", async () => {

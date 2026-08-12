@@ -1,6 +1,6 @@
 interface ViewToggleProps {
-  lens: "map" | "deepCuts" | "drift";
-  onChange: (lens: "map" | "deepCuts" | "drift") => void;
+  lens: "map" | "charts" | "drift";
+  onChange: (lens: "map" | "charts" | "drift") => void;
 }
 
 export default function ViewToggle({ lens, onChange }: ViewToggleProps) {
@@ -16,11 +16,11 @@ export default function ViewToggle({ lens, onChange }: ViewToggleProps) {
       </button>
       <button
         type="button"
-        className={`view-toggle-btn${lens === "deepCuts" ? " is-active" : ""}`}
-        onClick={() => onChange("deepCuts")}
-        aria-pressed={lens === "deepCuts"}
+        className={`view-toggle-btn${lens === "charts" ? " is-active" : ""}`}
+        onClick={() => onChange("charts")}
+        aria-pressed={lens === "charts"}
       >
-        Deep Cuts
+        Charts
       </button>
       <button
         type="button"

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import SettingsPanel from "./components/SettingsPanel";
 import TasteMap from "./components/TasteMap";
 import ProfileCard from "./components/ProfileCard";
-import DeepCutsScreen from "./components/DeepCutsScreen";
+import ChartsScreen from "./components/ChartsScreen";
 import DriftScreen from "./components/DriftScreen";
 import LoadingAstronaut from "./components/LoadingAstronaut";
 import FloatingDecor from "./components/FloatingDecor";
@@ -14,7 +14,6 @@ import { fetchDriftData } from "./lib/fetchDrift";
 import { buildGraph } from "./lib/graph";
 import { topGenre, topGenres } from "./lib/profileStats";
 import { getRecentTracks } from "./lib/lastfm";
-import { rankDeepCuts } from "./lib/deepCuts";
 import { computeDrift } from "./lib/drift";
 import type {
   Settings,
@@ -34,6 +33,7 @@ type LoadState =
   | {
       status: "ready";
       graph: Graph;
+      topArtists: TopArtist[];
       topArtistName: string | null;
       topGenreName: string | null;
       topGenres: GenreCount[];
@@ -44,21 +44,16 @@ export default function App() {
   const [loadState, setLoadState] = useState<LoadState>({ status: "loading" });
   const [selected, setSelected] = useState<GraphNode | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [topAlbum, setTopAlbum] = useState<TopAlbum | null>(null);
+  const [topAlbums, setTopAlbums] = useState<TopAlbum[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [nowPlaying, setNowPlaying] = useState<NowPlayingTrack | null>(null);
-  const [lens, setLens] = useState<"map" | "deepCuts" | "drift">("map");
+  const [lens, setLens] = useState<"map" | "charts" | "drift">("map");
   const [recentPeriod, setRecentPeriod] = useState<Period>("3month");
   const [baselinePeriod, setBaselinePeriod] = useState<Period>("12month");
   const [driftData, setDriftData] = useState<{ recent: TopArtist[]; baseline: TopArtist[] }>({
     recent: [],
     baseline: [],
   });
-
-  const deepCuts = useMemo(
-    () => (loadState.status === "ready" ? rankDeepCuts(loadState.graph.nodes) : []),
-    [loadState]
-  );
 
   const driftEntries = useMemo(
     () => computeDrift(driftData.recent, driftData.baseline),
@@ -76,6 +71,7 @@ export default function App() {
         setLoadState({
           status: "ready",
           graph: buildGraph(bundle),
+          topArtists: bundle.core,
           topArtistName: bundle.core[0]?.name ?? null,
           topGenreName: topGenre(bundle.tagsByArtist),
           topGenres: topGenres(bundle.tagsByArtist),
@@ -91,12 +87,12 @@ export default function App() {
       .then((bundle) => {
         if (cancelled) return;
         setProfile(bundle.profile);
-        setTopAlbum(bundle.topAlbum);
+        setTopAlbums(bundle.topAlbums);
       })
       .catch(() => {
         if (cancelled) return;
         setProfile(null);
-        setTopAlbum(null);
+        setTopAlbums([]);
       });
 
     return () => {
@@ -131,7 +127,7 @@ export default function App() {
   }, [settings]);
 
   // Fetches Drift's two-period comparison only while the Drift lens is
-  // active -- no need to prefetch it while on the Map/Deep Cuts lenses.
+  // active -- no need to prefetch it while on the Map/Charts lenses.
   useEffect(() => {
     if (!settings || lens !== "drift") return;
     let cancelled = false;
@@ -168,13 +164,14 @@ export default function App() {
       setLoadState({
         status: "ready",
         graph: buildGraph(bundle),
+        topArtists: bundle.core,
         topArtistName: bundle.core[0]?.name ?? null,
         topGenreName: topGenre(bundle.tagsByArtist),
         topGenres: topGenres(bundle.tagsByArtist),
       });
       if (profileBundle) {
         setProfile(profileBundle.profile);
-        setTopAlbum(profileBundle.topAlbum);
+        setTopAlbums(profileBundle.topAlbums);
       }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Failed to refresh your taste map.";
@@ -188,7 +185,7 @@ export default function App() {
     clearSettings();
     setSettings(null);
     setProfile(null);
-    setTopAlbum(null);
+    setTopAlbums([]);
     setLoadState({ status: "loading" });
     setSelected(null);
   }
@@ -221,7 +218,7 @@ export default function App() {
         username={profile?.name || settings.username}
         avatarUrl={profile?.image ?? null}
         topArtistName={loadState.topArtistName}
-        topAlbumName={topAlbum?.name ?? null}
+        topAlbumName={topAlbums[0]?.name ?? null}
         totalScrobbles={profile?.playcount ?? null}
         topGenreName={loadState.topGenreName}
         nowPlaying={nowPlaying}
@@ -253,9 +250,13 @@ export default function App() {
               </aside>
             )}
           </div>
-        ) : lens === "deepCuts" ? (
+        ) : lens === "charts" ? (
           <div className="map-area">
-            <DeepCutsScreen deepCuts={deepCuts} />
+            <ChartsScreen
+              topArtists={loadState.topArtists}
+              topAlbums={topAlbums}
+              topGenres={loadState.topGenres}
+            />
           </div>
         ) : (
           <div className="map-area">

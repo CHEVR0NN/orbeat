@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import SettingsPanel from "./components/SettingsPanel";
 import TasteMap from "./components/TasteMap";
 import ProfileCard from "./components/ProfileCard";
+import DeepCutsList from "./components/DeepCutsList";
 import LoadingAstronaut from "./components/LoadingAstronaut";
 import FloatingDecor from "./components/FloatingDecor";
 import { readSettings, clearSettings } from "./lib/settings";
@@ -10,6 +11,7 @@ import { fetchProfileData } from "./lib/fetchProfileData";
 import { buildGraph } from "./lib/graph";
 import { topGenre, topGenres } from "./lib/profileStats";
 import { getRecentTracks } from "./lib/lastfm";
+import { rankDeepCuts } from "./lib/deepCuts";
 import type {
   Settings,
   Graph,
@@ -39,6 +41,14 @@ export default function App() {
   const [topAlbum, setTopAlbum] = useState<TopAlbum | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [nowPlaying, setNowPlaying] = useState<NowPlayingTrack | null>(null);
+  const [lens, setLens] = useState<"map" | "deepCuts">("map");
+  const [focusNodeId, setFocusNodeId] = useState<string | null>(null);
+
+  const deepCuts = useMemo(
+    () => (loadState.status === "ready" ? rankDeepCuts(loadState.graph.nodes) : []),
+    [loadState]
+  );
+  const deepCutIds = useMemo(() => new Set(deepCuts.map((d) => d.node.id)), [deepCuts]);
 
   useEffect(() => {
     if (!settings) return;
@@ -105,6 +115,15 @@ export default function App() {
     };
   }, [settings]);
 
+  // Clears focusNodeId back to null right after TasteMap has had a chance to
+  // consume it, so clicking the same Deep Cuts row twice still re-triggers
+  // the zoom (a no-op state change wouldn't re-fire TasteMap's effect).
+  useEffect(() => {
+    if (focusNodeId === null) return;
+    const id = setTimeout(() => setFocusNodeId(null), 0);
+    return () => clearTimeout(id);
+  }, [focusNodeId]);
+
   async function handleRefresh() {
     if (!settings) return;
     setRefreshing(true);
@@ -139,6 +158,11 @@ export default function App() {
     setTopAlbum(null);
     setLoadState({ status: "loading" });
     setSelected(null);
+  }
+
+  function handleDeepCutSelect(node: GraphNode) {
+    setSelected(node);
+    setFocusNodeId(node.id);
   }
 
   if (!settings) {
@@ -177,10 +201,18 @@ export default function App() {
         onRefresh={handleRefresh}
         onChangeAccount={handleChangeAccount}
         refreshing={refreshing}
+        lens={lens}
+        onLensChange={setLens}
       />
       <div className="map-area">
-        <TasteMap graph={loadState.graph} onSelectNode={setSelected} />
-        {selected && (
+        <TasteMap
+          graph={loadState.graph}
+          onSelectNode={setSelected}
+          lens={lens}
+          deepCutIds={deepCutIds}
+          focusNodeId={focusNodeId}
+        />
+        {selected ? (
           <aside className="node-detail">
             <h2>{selected.id}</h2>
             <p>
@@ -192,6 +224,8 @@ export default function App() {
             {selected.match !== undefined && <p>{Math.round(selected.match * 100)}% similar</p>}
             <button onClick={() => setSelected(null)}>Close</button>
           </aside>
+        ) : (
+          lens === "deepCuts" && <DeepCutsList deepCuts={deepCuts} onSelect={handleDeepCutSelect} />
         )}
       </div>
     </div>

@@ -435,6 +435,15 @@ body::after {
   box-shadow: inset 0 0 80px #000, 0 0 0 4px var(--accent-cyan);
 }
 
+.app-tabbar {
+  flex-shrink: 0;
+  margin: 12px 12px 0;
+  padding: 10px 12px;
+  border-radius: 20px;
+  background: var(--bg-card);
+  border-bottom: 3px solid var(--accent-cyan);
+}
+
 .profile-card {
   width: 340px;
   flex-shrink: 0;

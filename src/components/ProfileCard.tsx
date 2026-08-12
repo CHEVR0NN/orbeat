@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { Radio, MoonStar, Star } from "lucide-react";
-import ViewToggle from "./ViewToggle";
 import type { NowPlayingTrack, GenreCount } from "../types";
 
 interface ProfileCardProps {
@@ -15,8 +14,6 @@ interface ProfileCardProps {
   onRefresh: () => void;
   onChangeAccount: () => void;
   refreshing: boolean;
-  lens: "map" | "deepCuts" | "drift";
-  onLensChange: (lens: "map" | "deepCuts" | "drift") => void;
 }
 
 const SECTORS = ["SECTOR 7-G", "SECTOR 12-B", "SECTOR 3-K", "SECTOR 9-R"];
@@ -60,8 +57,6 @@ export default function ProfileCard({
   onRefresh,
   onChangeAccount,
   refreshing,
-  lens,
-  onLensChange,
 }: ProfileCardProps) {
   const { systemId, sector, licenseNo } = deriveIdentity(username);
   const maxGenreCount = topGenres[0]?.count ?? 0;
@@ -211,8 +206,6 @@ export default function ProfileCard({
             <span className="profile-card-legend-dot profile-card-legend-dot-candidate" /> candidate
           </span>
         </div>
-
-        <ViewToggle lens={lens} onChange={onLensChange} />
 
         <div className="profile-card-controls">
           <button type="button" onClick={onRefresh} disabled={refreshing}>

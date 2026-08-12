@@ -45,6 +45,11 @@ export default function SettingsPanel({ onSaved }: SettingsPanelProps) {
     <div className="settings-panel">
       <h1>Orbeat</h1>
       <p>
+        Orbeat turns your Last.fm listening history into an explorable galaxy
+        map. See your top artists as a living map, surface under-the-radar
+        picks in Deep Cuts, and track what's rising or fading in Drift.
+      </p>
+      <p>
         Enter your Last.fm API key and username to build your taste map. Get a
         free key at{" "}
         <a href="https://www.last.fm/api/account/create" target="_blank" rel="noreferrer">

@@ -4,6 +4,8 @@ import { rankReadout } from "../lib/drift";
 
 interface DriftChartProps {
   entries: DriftEntry[];
+  recentLabel?: string;
+  baselineLabel?: string;
 }
 
 const ROW_HEIGHT = 40;
@@ -23,7 +25,7 @@ function xPercent(rank: number, maxRank: number): number {
   return ((rank - 1) / (maxRank - 1)) * PLOT_RIGHT;
 }
 
-export default function DriftChart({ entries }: DriftChartProps) {
+export default function DriftChart({ entries, recentLabel = "Recent", baselineLabel = "Baseline" }: DriftChartProps) {
   const [showTable, setShowTable] = useState(false);
   const [hoveredName, setHoveredName] = useState<string | null>(null);
 
@@ -60,6 +62,14 @@ export default function DriftChart({ entries }: DriftChartProps) {
         <span className="drift-chart-legend-item">
           <span className="drift-chart-legend-dot drift-chart-legend-dot-fading" />
           Fading
+        </span>
+        <span className="drift-chart-legend-item">
+          <span className="drift-chart-legend-shape drift-chart-legend-shape-ring" />
+          {baselineLabel}
+        </span>
+        <span className="drift-chart-legend-item">
+          <span className="drift-chart-legend-shape drift-chart-legend-shape-solid" />
+          {recentLabel}
         </span>
       </div>
 
@@ -98,8 +108,11 @@ export default function DriftChart({ entries }: DriftChartProps) {
               const color = entry.direction === "rising" ? "var(--accent-cyan)" : "var(--accent-coral)";
 
               const hasBoth = entry.rankBaseline !== null && entry.rankRecent !== null;
-              // The "better" (numerically lower) rank is always labeled; the
-              // other rank's label is reserved for hover, per spec.
+              // Both ranks are always labeled (not hover-gated) so the full
+              // baseline -> recent movement reads at a glance. The "better"
+              // (numerically lower) rank sits above the dot line, the other
+              // below it, so the two labels never collide vertically even
+              // when their x positions land close together.
               const betterRank = hasBoth
                 ? Math.min(entry.rankBaseline as number, entry.rankRecent as number)
                 : (entry.rankRecent ?? entry.rankBaseline) as number;
@@ -170,7 +183,9 @@ export default function DriftChart({ entries }: DriftChartProps) {
                         cx={`${xPercent(entry.rankBaseline, maxRank)}%`}
                         cy={ROW_HEIGHT / 2}
                         r={6}
-                        fill={color}
+                        fill="none"
+                        stroke={color}
+                        strokeWidth={2}
                       />
                     )}
                     {entry.rankRecent !== null && (
@@ -190,12 +205,12 @@ export default function DriftChart({ entries }: DriftChartProps) {
                     >
                       #{betterRank}
                     </text>
-                    {worseRank !== null && isActive && (
+                    {worseRank !== null && (
                       <text
                         x={`${xPercent(worseRank, maxRank)}%`}
-                        y={ROW_HEIGHT / 2 - 11}
+                        y={ROW_HEIGHT / 2 + 17}
                         textAnchor="middle"
-                        className="drift-chart-rank-label"
+                        className="drift-chart-rank-label drift-chart-rank-label-secondary"
                       >
                         #{worseRank}
                       </text>
@@ -205,12 +220,8 @@ export default function DriftChart({ entries }: DriftChartProps) {
                   {isActive && (
                     <div className="drift-chart-tooltip" style={{ gridRow: index + 1, gridColumn: 2 }}>
                       <div className="drift-chart-tooltip-name">{entry.name}</div>
-                      {/* DriftChart has no prop carrying the actual period-option
-                          labels (e.g. "3 Month") by design — it only receives
-                          `entries` — so the tooltip uses the literal words
-                          "Baseline"/"Recent" rather than calendar period names. */}
-                      <div>Baseline: {entry.rankBaseline !== null ? `#${entry.rankBaseline}` : "—"}</div>
-                      <div>Recent: {entry.rankRecent !== null ? `#${entry.rankRecent}` : "—"}</div>
+                      <div>{baselineLabel}: {entry.rankBaseline !== null ? `#${entry.rankBaseline}` : "—"}</div>
+                      <div>{recentLabel}: {entry.rankRecent !== null ? `#${entry.rankRecent}` : "—"}</div>
                       <div className="drift-chart-tooltip-readout">{rankReadout(entry)}</div>
                     </div>
                   )}
@@ -246,6 +257,8 @@ export default function DriftChart({ entries }: DriftChartProps) {
                 </g>
               ))}
             </svg>
+            <div />
+            <div className="drift-chart-axis-title">Rank (1 = most played)</div>
           </div>
         </div>
       )}

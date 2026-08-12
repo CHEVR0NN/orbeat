@@ -18,6 +18,9 @@ export default function DriftScreen({
   onRecentPeriodChange,
   onBaselinePeriodChange,
 }: DriftScreenProps) {
+  const recentLabel = PERIOD_OPTIONS.find((opt) => opt.value === recentPeriod)?.label;
+  const baselineLabel = PERIOD_OPTIONS.find((opt) => opt.value === baselinePeriod)?.label;
+
   return (
     <section className="drift-screen">
       <p className="drift-screen-header">
@@ -50,7 +53,7 @@ export default function DriftScreen({
         Comparing your top artists across two windows — not calendar before/after.
       </p>
 
-      <DriftChart entries={entries} />
+      <DriftChart entries={entries} recentLabel={recentLabel} baselineLabel={baselineLabel} />
     </section>
   );
 }

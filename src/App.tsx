@@ -3,15 +3,18 @@ import SettingsPanel from "./components/SettingsPanel";
 import TasteMap from "./components/TasteMap";
 import ProfileCard from "./components/ProfileCard";
 import DeepCutsList from "./components/DeepCutsList";
+import DriftPanel from "./components/DriftPanel";
 import LoadingAstronaut from "./components/LoadingAstronaut";
 import FloatingDecor from "./components/FloatingDecor";
 import { readSettings, clearSettings } from "./lib/settings";
 import { fetchGraphData } from "./lib/fetchGraphData";
 import { fetchProfileData } from "./lib/fetchProfileData";
+import { fetchDriftData } from "./lib/fetchDrift";
 import { buildGraph } from "./lib/graph";
 import { topGenre, topGenres } from "./lib/profileStats";
 import { getRecentTracks } from "./lib/lastfm";
 import { rankDeepCuts } from "./lib/deepCuts";
+import { computeDrift } from "./lib/drift";
 import type {
   Settings,
   Graph,
@@ -20,6 +23,8 @@ import type {
   TopAlbum,
   NowPlayingTrack,
   GenreCount,
+  TopArtist,
+  Period,
 } from "./types";
 
 type LoadState =
@@ -41,14 +46,36 @@ export default function App() {
   const [topAlbum, setTopAlbum] = useState<TopAlbum | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [nowPlaying, setNowPlaying] = useState<NowPlayingTrack | null>(null);
-  const [lens, setLens] = useState<"map" | "deepCuts">("map");
+  const [lens, setLens] = useState<"map" | "deepCuts" | "drift">("map");
   const [focusNodeId, setFocusNodeId] = useState<string | null>(null);
+  const [recentPeriod, setRecentPeriod] = useState<Period>("3month");
+  const [baselinePeriod, setBaselinePeriod] = useState<Period>("12month");
+  const [driftData, setDriftData] = useState<{ recent: TopArtist[]; baseline: TopArtist[] }>({
+    recent: [],
+    baseline: [],
+  });
 
   const deepCuts = useMemo(
     () => (loadState.status === "ready" ? rankDeepCuts(loadState.graph.nodes) : []),
     [loadState]
   );
   const deepCutIds = useMemo(() => new Set(deepCuts.map((d) => d.node.id)), [deepCuts]);
+
+  const driftEntries = useMemo(
+    () => computeDrift(driftData.recent, driftData.baseline),
+    [driftData]
+  );
+  const driftByCoreId = useMemo(() => {
+    const map = new Map<string, "rising" | "fading">();
+    if (loadState.status !== "ready") return map;
+    const coreIds = new Set(
+      loadState.graph.nodes.filter((n) => n.kind === "core").map((n) => n.id)
+    );
+    driftEntries.forEach((entry) => {
+      if (coreIds.has(entry.name)) map.set(entry.name, entry.direction);
+    });
+    return map;
+  }, [driftEntries, loadState]);
 
   useEffect(() => {
     if (!settings) return;
@@ -123,6 +150,27 @@ export default function App() {
     const id = setTimeout(() => setFocusNodeId(null), 0);
     return () => clearTimeout(id);
   }, [focusNodeId]);
+
+  // Fetches Drift's two-period comparison only while the Drift lens is
+  // active -- no need to prefetch it while on the Map/Deep Cuts lenses.
+  useEffect(() => {
+    if (!settings || lens !== "drift") return;
+    let cancelled = false;
+
+    fetchDriftData(settings, recentPeriod, baselinePeriod)
+      .then((bundle) => {
+        if (cancelled) return;
+        setDriftData(bundle);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setDriftData({ recent: [], baseline: [] });
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [settings, lens, recentPeriod, baselinePeriod]);
 
   async function handleRefresh() {
     if (!settings) return;
@@ -211,6 +259,7 @@ export default function App() {
           lens={lens}
           deepCutIds={deepCutIds}
           focusNodeId={focusNodeId}
+          driftByCoreId={driftByCoreId}
         />
         {selected ? (
           <aside className="node-detail">
@@ -224,8 +273,18 @@ export default function App() {
             {selected.match !== undefined && <p>{Math.round(selected.match * 100)}% similar</p>}
             <button onClick={() => setSelected(null)}>Close</button>
           </aside>
+        ) : lens === "deepCuts" ? (
+          <DeepCutsList deepCuts={deepCuts} onSelect={handleDeepCutSelect} />
         ) : (
-          lens === "deepCuts" && <DeepCutsList deepCuts={deepCuts} onSelect={handleDeepCutSelect} />
+          lens === "drift" && (
+            <DriftPanel
+              entries={driftEntries}
+              recentPeriod={recentPeriod}
+              baselinePeriod={baselinePeriod}
+              onRecentPeriodChange={setRecentPeriod}
+              onBaselinePeriodChange={setBaselinePeriod}
+            />
+          )
         )}
       </div>
     </div>

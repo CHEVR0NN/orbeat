@@ -310,9 +310,10 @@ function opacityFor(node: GraphNode): number {
 interface TasteMapProps {
   graph: Graph;
   onSelectNode: (node: GraphNode | null) => void;
-  lens?: "map" | "deepCuts";
+  lens?: "map" | "deepCuts" | "drift";
   deepCutIds?: Set<string>;
   focusNodeId?: string | null;
+  driftByCoreId?: Map<string, "rising" | "fading">;
 }
 
 export default function TasteMap({
@@ -321,6 +322,7 @@ export default function TasteMap({
   lens = "map",
   deepCutIds,
   focusNodeId,
+  driftByCoreId,
 }: TasteMapProps) {
   const [zoomedGalaxyId, setZoomedGalaxyId] = useState<string | null>(null);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
@@ -848,6 +850,9 @@ export default function TasteMap({
                   ? { transform: `rotateX(${VINYL_TILT_DEG}deg)`, transformOrigin: "0px 0px" }
                   : undefined;
                 const hasDeepCut = !zoomedGalaxyId && coresWithDeepCuts.has(node.id);
+                const driftDirection =
+                  !zoomedGalaxyId && lens === "drift" ? driftByCoreId?.get(node.id) : undefined;
+                const driftDimMultiplier = driftDirection === "fading" ? 0.15 : 1;
                 return (
                   <g
                     key={node.id}
@@ -858,7 +863,7 @@ export default function TasteMap({
                     transform={`translate(${node.x}, ${node.y})`}
                   >
                     <circle
-                      className={`taste-map-node-glow${hasDeepCut ? " taste-map-node-glow-deepcut" : ""}`}
+                      className={`taste-map-node-glow${hasDeepCut || driftDirection === "rising" ? " taste-map-node-glow-deepcut" : ""}`}
                       cx={0}
                       cy={0}
                       r={r + 16 + (galaxySeed(node.id) % 14)}
@@ -894,7 +899,7 @@ export default function TasteMap({
                           r={r}
                           color={VINYL_LABEL_FILL}
                           className="taste-map-node-core"
-                          style={{ opacity: opacityFor(node) * depthOpacity, pointerEvents: "auto", transition: "opacity 350ms ease", ...centerSquashStyle }}
+                          style={{ opacity: opacityFor(node) * depthOpacity * driftDimMultiplier, pointerEvents: "auto", transition: "opacity 350ms ease", ...centerSquashStyle }}
                           title={node.id}
                         />
                       ) : (
@@ -905,7 +910,7 @@ export default function TasteMap({
                           color={auraColor}
                           fillUrl={`url(#${PLANET_GRADIENT_IDS[rank % PLANET_GRADIENT_IDS.length]})`}
                           className="taste-map-node-core"
-                          style={{ opacity: opacityFor(node) * depthOpacity, pointerEvents: "auto", transition: "opacity 350ms ease" }}
+                          style={{ opacity: opacityFor(node) * depthOpacity * driftDimMultiplier, pointerEvents: "auto", transition: "opacity 350ms ease" }}
                           title={node.id}
                         />
                       )}

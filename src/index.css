@@ -567,33 +567,21 @@ body::after {
   opacity: 0.6;
 }
 
-.drift-chart-tooltip {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  margin-top: 4px;
-  z-index: 5;
-  background: var(--bg-card);
-  border: 2px solid var(--accent-cyan);
-  border-radius: 8px;
-  padding: 0.5rem 0.65rem;
+.drift-chart-tooltip-name,
+.drift-chart-tooltip-line,
+.drift-chart-tooltip-readout {
   font-family: var(--font-hud);
   font-size: 0.7rem;
-  color: var(--text-white);
-  white-space: nowrap;
-  box-shadow: 0 0 10px rgba(35, 229, 216, 0.4), 0 4px 12px rgba(0, 0, 0, 0.8);
-  pointer-events: none;
+  fill: var(--text-white);
 }
 
 .drift-chart-tooltip-name {
-  color: var(--accent-yellow);
+  fill: var(--accent-yellow);
   font-weight: bold;
-  margin-bottom: 0.25rem;
 }
 
 .drift-chart-tooltip-readout {
-  margin-top: 0.25rem;
-  color: var(--accent-cyan);
+  fill: var(--accent-cyan);
 }
 
 .drift-chart-table {

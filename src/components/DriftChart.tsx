@@ -10,6 +10,16 @@ interface DriftChartProps {
 
 const ROW_HEIGHT = 40;
 const AXIS_HEIGHT = 28;
+// Layout constants for the SVG hover tooltip rendered inside each row's own
+// <svg>. Sized from .drift-chart-tooltip's former padding/font-size so the
+// SVG version keeps the same visual footprint as the HTML div it replaces.
+const TOOLTIP_PADDING_X = 10;
+const TOOLTIP_PADDING_Y = 8;
+const TOOLTIP_LINE_HEIGHT = 14;
+const TOOLTIP_CHAR_WIDTH = 6.5;
+const TOOLTIP_TEXT_BASELINE_OFFSET = 10;
+const TOOLTIP_GAP = 6;
+const TOOLTIP_EDGE_MARGIN = 4;
 // The plot only uses the left portion of the row's width; the rest is a
 // reserved "off-chart" stub zone for new/gone artists (see xPercent below).
 const PLOT_RIGHT = 68;
@@ -23,6 +33,15 @@ const STUB_LABEL_X = 93;
 function xPercent(rank: number, maxRank: number): number {
   if (maxRank <= 1) return 0;
   return ((rank - 1) / (maxRank - 1)) * PLOT_RIGHT;
+}
+
+// Left edge of a `boxWidth`-px-wide box centered under `anchorPercent`,
+// clamped to stay inside the row's own bounds ([edgeMargin, 100% - box -
+// edgeMargin]). Only shapes (not <text>, which parses x as a list of
+// coordinates rather than a CSS length) accept this calc()/min()/max() mix,
+// so it's applied to the tooltip's nested <svg> wrapper -- see its usage.
+function clampedLeftEdge(anchorPercent: number, boxWidth: number): string {
+  return `max(${TOOLTIP_EDGE_MARGIN}px, min(calc(100% - ${boxWidth + TOOLTIP_EDGE_MARGIN}px), calc(${anchorPercent}% - ${boxWidth / 2}px)))`;
 }
 
 export default function DriftChart({ entries, recentLabel = "Recent", baselineLabel = "Baseline" }: DriftChartProps) {
@@ -101,7 +120,7 @@ export default function DriftChart({ entries, recentLabel = "Recent", baselineLa
       ) : (
         <div className="drift-chart-plot">
           <div className="drift-chart-grid">
-            {rows.map((entry, index) => {
+            {rows.map((entry) => {
               const isActive = hoveredName === entry.name;
               const dimmed = hoveredName !== null && !isActive;
               const opacity = dimmed ? 0.35 : 1;
@@ -119,6 +138,24 @@ export default function DriftChart({ entries, recentLabel = "Recent", baselineLa
               const worseRank = hasBoth
                 ? Math.max(entry.rankBaseline as number, entry.rankRecent as number)
                 : null;
+
+              // Hover tooltip content/geometry, computed as SVG marks inside
+              // this row's own <svg> (instead of an HTML sibling positioned
+              // via CSS grid coordinates) so it can never drift onto another
+              // row. Anchored under betterRank's x position, clamped so the
+              // box stays within the row's own bounds at either edge.
+              const tooltipLines = [
+                entry.name,
+                `${baselineLabel}: ${entry.rankBaseline !== null ? `#${entry.rankBaseline}` : "—"}`,
+                `${recentLabel}: ${entry.rankRecent !== null ? `#${entry.rankRecent}` : "—"}`,
+                rankReadout(entry),
+              ];
+              const tooltipWidth =
+                Math.max(...tooltipLines.map((line) => line.length)) * TOOLTIP_CHAR_WIDTH + TOOLTIP_PADDING_X * 2;
+              const tooltipHeight = tooltipLines.length * TOOLTIP_LINE_HEIGHT + TOOLTIP_PADDING_Y * 2;
+              const tooltipAnchorPercent = xPercent(betterRank, maxRank);
+              const tooltipLeftEdge = clampedLeftEdge(tooltipAnchorPercent, tooltipWidth);
+              const tooltipY = ROW_HEIGHT + TOOLTIP_GAP;
 
               return (
                 <Fragment key={entry.name}>
@@ -142,6 +179,17 @@ export default function DriftChart({ entries, recentLabel = "Recent", baselineLa
                       onBlur={() => setHoveredName(null)}
                     />
 
+                    <line
+                      x1={`${PLOT_RIGHT}%`}
+                      y1={4}
+                      x2={`${PLOT_RIGHT}%`}
+                      y2={ROW_HEIGHT - 4}
+                      stroke="var(--accent-cyan)"
+                      strokeWidth={1}
+                      opacity={0.2}
+                      pointerEvents="none"
+                    />
+
                     {hasBoth && (
                       <line
                         x1={`${xPercent(entry.rankBaseline as number, maxRank)}%`}
@@ -151,6 +199,7 @@ export default function DriftChart({ entries, recentLabel = "Recent", baselineLa
                         stroke={color}
                         strokeWidth={2}
                         strokeLinecap="round"
+                        pointerEvents="none"
                       />
                     )}
 
@@ -171,8 +220,9 @@ export default function DriftChart({ entries, recentLabel = "Recent", baselineLa
                           strokeLinecap="round"
                           strokeDasharray="2 5"
                           opacity={0.7}
+                          pointerEvents="none"
                         />
-                        <text x={`${STUB_LABEL_X}%`} y={ROW_HEIGHT / 2 + 4} className="drift-chart-stub-label">
+                        <text x={`${STUB_LABEL_X}%`} y={ROW_HEIGHT / 2 + 4} className="drift-chart-stub-label" pointerEvents="none">
                           {entry.rankBaseline === null ? "new" : "gone"}
                         </text>
                       </>
@@ -186,6 +236,7 @@ export default function DriftChart({ entries, recentLabel = "Recent", baselineLa
                         fill="none"
                         stroke={color}
                         strokeWidth={2}
+                        pointerEvents="none"
                       />
                     )}
                     {entry.rankRecent !== null && (
@@ -194,6 +245,7 @@ export default function DriftChart({ entries, recentLabel = "Recent", baselineLa
                         cy={ROW_HEIGHT / 2}
                         r={6}
                         fill={color}
+                        pointerEvents="none"
                       />
                     )}
 
@@ -202,6 +254,7 @@ export default function DriftChart({ entries, recentLabel = "Recent", baselineLa
                       y={ROW_HEIGHT / 2 - 11}
                       textAnchor="middle"
                       className="drift-chart-rank-label"
+                      pointerEvents="none"
                     >
                       #{betterRank}
                     </text>
@@ -211,20 +264,60 @@ export default function DriftChart({ entries, recentLabel = "Recent", baselineLa
                         y={ROW_HEIGHT / 2 + 17}
                         textAnchor="middle"
                         className="drift-chart-rank-label drift-chart-rank-label-secondary"
+                        pointerEvents="none"
                       >
                         #{worseRank}
                       </text>
                     )}
-                  </svg>
 
-                  {isActive && (
-                    <div className="drift-chart-tooltip" style={{ gridRow: index + 1, gridColumn: 2 }}>
-                      <div className="drift-chart-tooltip-name">{entry.name}</div>
-                      <div>{baselineLabel}: {entry.rankBaseline !== null ? `#${entry.rankBaseline}` : "—"}</div>
-                      <div>{recentLabel}: {entry.rankRecent !== null ? `#${entry.rankRecent}` : "—"}</div>
-                      <div className="drift-chart-tooltip-readout">{rankReadout(entry)}</div>
-                    </div>
-                  )}
+                    {isActive && (
+                      // A nested <svg> (rather than a <g>) so its x/y clamp
+                      // expression -- which needs calc()/min()/max() -- only
+                      // has to be resolved once, on an element that supports
+                      // it. Chromium accepts calc()/min()/max() for a shape's
+                      // x/y (confirmed working on the rect below), but NOT
+                      // for <text>'s x, which uses a separate list-of-
+                      // coordinates grammar and silently resets to 0 if given
+                      // one. Nesting an <svg> here gives its children a fresh
+                      // local origin, so the text lines can use plain pixel
+                      // numbers instead of needing that same clamp math.
+                      <svg
+                        x={tooltipLeftEdge}
+                        y={tooltipY}
+                        width={tooltipWidth}
+                        height={tooltipHeight}
+                        overflow="visible"
+                        pointerEvents="none"
+                      >
+                        <rect
+                          x={0}
+                          y={0}
+                          width={tooltipWidth}
+                          height={tooltipHeight}
+                          rx={8}
+                          fill="var(--bg-card)"
+                          stroke="var(--accent-cyan)"
+                          strokeWidth={2}
+                        />
+                        {tooltipLines.map((line, lineIndex) => (
+                          <text
+                            key={lineIndex}
+                            x={TOOLTIP_PADDING_X}
+                            y={TOOLTIP_PADDING_Y + TOOLTIP_TEXT_BASELINE_OFFSET + lineIndex * TOOLTIP_LINE_HEIGHT}
+                            className={
+                              lineIndex === 0
+                                ? "drift-chart-tooltip-name"
+                                : lineIndex === tooltipLines.length - 1
+                                  ? "drift-chart-tooltip-readout"
+                                  : "drift-chart-tooltip-line"
+                            }
+                          >
+                            {line}
+                          </text>
+                        ))}
+                      </svg>
+                    )}
+                  </svg>
                 </Fragment>
               );
             })}

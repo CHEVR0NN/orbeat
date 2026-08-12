@@ -15,8 +15,8 @@ interface ProfileCardProps {
   onRefresh: () => void;
   onChangeAccount: () => void;
   refreshing: boolean;
-  lens: "map" | "deepCuts";
-  onLensChange: (lens: "map" | "deepCuts") => void;
+  lens: "map" | "deepCuts" | "drift";
+  onLensChange: (lens: "map" | "deepCuts" | "drift") => void;
 }
 
 const SECTORS = ["SECTOR 7-G", "SECTOR 12-B", "SECTOR 3-K", "SECTOR 9-R"];

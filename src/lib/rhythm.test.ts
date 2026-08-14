@@ -6,6 +6,7 @@ import {
   daypartBreakdown,
   weekdayWeekendSplit,
   sessionStats,
+  groupIntoSessions,
   topArtistPerCell,
   topArtistsInWindow,
 } from "./rhythm";
@@ -213,5 +214,36 @@ describe("sessionStats", () => {
       avgSessionLength: 2.5,
       longestSessionLength: 3,
     });
+  });
+});
+
+describe("groupIntoSessions", () => {
+  it("returns an empty array for empty input", () => {
+    expect(groupIntoSessions([])).toEqual([]);
+  });
+
+  it("keeps a single unbroken session together", () => {
+    const scrobbles = [
+      scrobbleAt("2026-08-01T10:00:00"),
+      scrobbleAt("2026-08-01T10:10:00"),
+      scrobbleAt("2026-08-01T10:15:00"),
+    ];
+    const sessions = groupIntoSessions(scrobbles);
+    expect(sessions).toHaveLength(1);
+    expect(sessions[0]).toHaveLength(3);
+  });
+
+  it("splits into separate sessions at a gap over the threshold", () => {
+    const scrobbles = [
+      scrobbleAt("2026-08-01T10:00:00"),
+      scrobbleAt("2026-08-01T10:10:00"), // 10 min gap, same session
+      scrobbleAt("2026-08-01T10:15:00"), // 5 min gap, same session
+      scrobbleAt("2026-08-01T11:00:00"), // 45 min gap, new session
+      scrobbleAt("2026-08-01T11:05:00"), // 5 min gap, same session
+    ];
+    const sessions = groupIntoSessions(scrobbles);
+    expect(sessions).toHaveLength(2);
+    expect(sessions[0]).toHaveLength(3);
+    expect(sessions[1]).toHaveLength(2);
   });
 });

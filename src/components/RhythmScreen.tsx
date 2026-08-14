@@ -11,7 +11,7 @@ import {
   topArtistsInWindow,
   HOUR_BUCKETS,
 } from "../lib/rhythm";
-import RhythmGame from "./RhythmGame";
+import { generateRoasts } from "../lib/roast";
 
 interface RhythmScreenProps {
   scrobbles: ScrobbleEvent[];
@@ -57,8 +57,9 @@ export default function RhythmScreen({ scrobbles, isLoading }: RhythmScreenProps
   const [hoveredCell, setHoveredCell] = useState<{ day: number; hour: number } | null>(null);
   const [highlightedCells, setHighlightedCells] = useState<Set<string> | null>(null);
   const [metric, setMetric] = useState<"count" | "artist">("count");
-  const [showGame, setShowGame] = useState(false);
+  const [roastIndex, setRoastIndex] = useState(0);
 
+  const roasts = useMemo(() => generateRoasts(scrobbles), [scrobbles]);
   const matrix = useMemo(() => buildHourDayMatrix(scrobbles), [scrobbles]);
   const streak = useMemo(() => longestStreak(scrobbles), [scrobbles]);
   const archetype = useMemo(() => deriveArchetype(matrix), [matrix]);
@@ -82,6 +83,20 @@ export default function RhythmScreen({ scrobbles, isLoading }: RhythmScreenProps
         <p className="rhythm-screen-empty">No listening history yet. Keep listening.</p>
       ) : (
         <>
+          {roasts.length > 0 && (
+            <div className="rhythm-roast-card">
+              <span className="rhythm-roast-label">Roast Mode</span>
+              <p className="rhythm-roast-text">{roasts[roastIndex % roasts.length].text}</p>
+              <button
+                type="button"
+                className="rhythm-roast-next"
+                onClick={() => setRoastIndex((i) => (i + 1) % roasts.length)}
+              >
+                Next roast
+              </button>
+            </div>
+          )}
+
           <div className="rhythm-tiles">
             <div
               className="rhythm-tile"
@@ -202,12 +217,6 @@ export default function RhythmScreen({ scrobbles, isLoading }: RhythmScreenProps
               ))}
             </div>
           )}
-
-          <button type="button" className="rhythm-game-toggle" onClick={() => setShowGame((v) => !v)}>
-            {showGame ? "Hide rhythm game" : "Play a quick rhythm game"}
-          </button>
-
-          {showGame && <RhythmGame />}
         </>
       )}
     </section>

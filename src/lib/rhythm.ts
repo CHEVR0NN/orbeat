@@ -130,24 +130,33 @@ export interface SessionStats {
   longestSessionLength: number;
 }
 
+export function groupIntoSessions(scrobbles: ScrobbleEvent[], gapMinutesThreshold = 30): ScrobbleEvent[][] {
+  if (scrobbles.length === 0) return [];
+
+  const sorted = [...scrobbles].sort((a, b) => a.timestamp - b.timestamp);
+  const sessions: ScrobbleEvent[][] = [];
+  let current: ScrobbleEvent[] = [sorted[0]];
+  for (let i = 1; i < sorted.length; i++) {
+    const gapMinutes = (sorted[i].timestamp - sorted[i - 1].timestamp) / 60000;
+    if (gapMinutes > gapMinutesThreshold) {
+      sessions.push(current);
+      current = [sorted[i]];
+    } else {
+      current.push(sorted[i]);
+    }
+  }
+  sessions.push(current);
+
+  return sessions;
+}
+
 export function sessionStats(scrobbles: ScrobbleEvent[], gapMinutesThreshold = 30): SessionStats {
   if (scrobbles.length === 0) {
     return { sessionCount: 0, avgSessionLength: 0, longestSessionLength: 0 };
   }
 
-  const sorted = [...scrobbles].sort((a, b) => a.timestamp - b.timestamp);
-  const sessionLengths: number[] = [];
-  let currentLength = 1;
-  for (let i = 1; i < sorted.length; i++) {
-    const gapMinutes = (sorted[i].timestamp - sorted[i - 1].timestamp) / 60000;
-    if (gapMinutes > gapMinutesThreshold) {
-      sessionLengths.push(currentLength);
-      currentLength = 1;
-    } else {
-      currentLength++;
-    }
-  }
-  sessionLengths.push(currentLength);
+  const sessions = groupIntoSessions(scrobbles, gapMinutesThreshold);
+  const sessionLengths = sessions.map((s) => s.length);
 
   return {
     sessionCount: sessionLengths.length,

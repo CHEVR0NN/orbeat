@@ -1,5 +1,14 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { getTopArtists, getTopTags, getSimilar, getInfo, getUserInfo, getTopAlbums, LastfmError } from "./lastfm";
+import {
+  getTopArtists,
+  getTopTags,
+  getSimilar,
+  getInfo,
+  getUserInfo,
+  getTopAlbums,
+  getRecentTracksHistory,
+  LastfmError,
+} from "./lastfm";
 
 function mockFetchOnce(body: unknown) {
   vi.stubGlobal(
@@ -8,6 +17,15 @@ function mockFetchOnce(body: unknown) {
       json: () => Promise.resolve(body),
     })
   );
+}
+
+function mockFetchSequence(bodies: unknown[]) {
+  const fn = vi.fn();
+  for (const body of bodies) {
+    fn.mockResolvedValueOnce({ json: () => Promise.resolve(body) });
+  }
+  vi.stubGlobal("fetch", fn);
+  return fn;
 }
 
 afterEach(() => {
@@ -130,5 +148,49 @@ describe("lastfm", () => {
     mockFetchOnce({ topalbums: { album: [] } });
     const result = await getTopAlbums("key", "kai", 1);
     expect(result).toEqual([]);
+  });
+
+  it("getRecentTracksHistory maps tracks into ScrobbleEvent[] with correct timestamp math", async () => {
+    mockFetchOnce({
+      recenttracks: {
+        track: [
+          { artist: { "#text": "Radiohead" }, date: { uts: "1700000000" } },
+          { artist: { "#text": "Aphex Twin" }, date: { uts: "1700000100" } },
+        ],
+      },
+    });
+    const result = await getRecentTracksHistory("key", "kai", { pages: 1, limit: 200 });
+    expect(result).toEqual([
+      { artist: "Radiohead", timestamp: 1700000000 * 1000 },
+      { artist: "Aphex Twin", timestamp: 1700000100 * 1000 },
+    ]);
+  });
+
+  it("getRecentTracksHistory skips the now-playing entry that has no date", async () => {
+    mockFetchOnce({
+      recenttracks: {
+        track: [
+          { artist: { "#text": "Now Playing Artist" }, "@attr": { nowplaying: "true" } },
+          { artist: { "#text": "Radiohead" }, date: { uts: "1700000000" } },
+        ],
+      },
+    });
+    const result = await getRecentTracksHistory("key", "kai", { pages: 1, limit: 200 });
+    expect(result).toEqual([{ artist: "Radiohead", timestamp: 1700000000 * 1000 }]);
+  });
+
+  it("getRecentTracksHistory stops paginating when a page comes back short", async () => {
+    const fullPage = Array.from({ length: 2 }, (_, i) => ({
+      artist: { "#text": `Artist ${i}` },
+      date: { uts: String(1700000000 + i) },
+    }));
+    const shortPage = [{ artist: { "#text": "Last Artist" }, date: { uts: "1700000200" } }];
+    const fetchMock = mockFetchSequence([
+      { recenttracks: { track: fullPage } },
+      { recenttracks: { track: shortPage } },
+    ]);
+    const result = await getRecentTracksHistory("key", "kai", { pages: 3, limit: 2 });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(result).toHaveLength(3);
   });
 });

@@ -24,7 +24,7 @@ export default function DriftScreen({
   return (
     <section className="drift-screen">
       <p className="drift-screen-header">
-        Drift — which artists are climbing your rotation and which are fading out
+        Which artists are climbing your rotation, and which are fading out
       </p>
 
       <div className="drift-panel-periods">
@@ -50,7 +50,7 @@ export default function DriftScreen({
         </label>
       </div>
       <p className="drift-panel-note">
-        Comparing your top artists across two windows — not calendar before/after.
+        Comparing your top artists across two windows, not two calendar dates.
       </p>
 
       <DriftChart entries={entries} recentLabel={recentLabel} baselineLabel={baselineLabel} />

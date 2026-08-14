@@ -65,7 +65,7 @@ export default function ProfileCard({
     today.getDate()
   ).padStart(2, "0")}`;
 
-  const trackText = nowPlaying ? `${nowPlaying.name} — ${nowPlaying.artist}` : "Standby";
+  const trackText = nowPlaying ? `${nowPlaying.name} · ${nowPlaying.artist}` : "Standby";
   const albumText = nowPlaying?.album ?? "";
   const trackMarquee = useMarqueeOverflow(trackText);
   const albumMarquee = useMarqueeOverflow(albumText);

@@ -1,6 +1,6 @@
 interface ViewToggleProps {
-  lens: "map" | "charts" | "drift";
-  onChange: (lens: "map" | "charts" | "drift") => void;
+  lens: "map" | "rhythm" | "drift";
+  onChange: (lens: "map" | "rhythm" | "drift") => void;
 }
 
 export default function ViewToggle({ lens, onChange }: ViewToggleProps) {
@@ -16,11 +16,11 @@ export default function ViewToggle({ lens, onChange }: ViewToggleProps) {
       </button>
       <button
         type="button"
-        className={`view-toggle-btn${lens === "charts" ? " is-active" : ""}`}
-        onClick={() => onChange("charts")}
-        aria-pressed={lens === "charts"}
+        className={`view-toggle-btn${lens === "rhythm" ? " is-active" : ""}`}
+        onClick={() => onChange("rhythm")}
+        aria-pressed={lens === "rhythm"}
       >
-        Charts
+        Rhythm
       </button>
       <button
         type="button"

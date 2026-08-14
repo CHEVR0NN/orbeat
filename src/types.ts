@@ -89,3 +89,8 @@ export interface GenreCount {
   name: string;
   count: number;
 }
+
+export interface ScrobbleEvent {
+  artist: string;
+  timestamp: number; // ms since epoch
+}

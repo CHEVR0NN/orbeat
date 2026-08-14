@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import SettingsPanel from "./components/SettingsPanel";
 import TasteMap from "./components/TasteMap";
 import ProfileCard from "./components/ProfileCard";
-import ChartsScreen from "./components/ChartsScreen";
+import RhythmScreen from "./components/RhythmScreen";
 import DriftScreen from "./components/DriftScreen";
 import LoadingAstronaut from "./components/LoadingAstronaut";
 import FloatingDecor from "./components/FloatingDecor";
@@ -11,6 +11,7 @@ import { readSettings, clearSettings } from "./lib/settings";
 import { fetchGraphData } from "./lib/fetchGraphData";
 import { fetchProfileData } from "./lib/fetchProfileData";
 import { fetchDriftData } from "./lib/fetchDrift";
+import { fetchRhythmData } from "./lib/fetchRhythmData";
 import { buildGraph } from "./lib/graph";
 import { topGenre, topGenres } from "./lib/profileStats";
 import { getRecentTracks } from "./lib/lastfm";
@@ -25,6 +26,7 @@ import type {
   GenreCount,
   TopArtist,
   Period,
+  ScrobbleEvent,
 } from "./types";
 
 type LoadState =
@@ -33,7 +35,6 @@ type LoadState =
   | {
       status: "ready";
       graph: Graph;
-      topArtists: TopArtist[];
       topArtistName: string | null;
       topGenreName: string | null;
       topGenres: GenreCount[];
@@ -47,13 +48,15 @@ export default function App() {
   const [topAlbums, setTopAlbums] = useState<TopAlbum[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [nowPlaying, setNowPlaying] = useState<NowPlayingTrack | null>(null);
-  const [lens, setLens] = useState<"map" | "charts" | "drift">("map");
+  const [lens, setLens] = useState<"map" | "rhythm" | "drift">("map");
   const [recentPeriod, setRecentPeriod] = useState<Period>("3month");
   const [baselinePeriod, setBaselinePeriod] = useState<Period>("12month");
   const [driftData, setDriftData] = useState<{ recent: TopArtist[]; baseline: TopArtist[] }>({
     recent: [],
     baseline: [],
   });
+  const [rhythmData, setRhythmData] = useState<ScrobbleEvent[]>([]);
+  const [rhythmLoading, setRhythmLoading] = useState(false);
 
   const driftEntries = useMemo(
     () => computeDrift(driftData.recent, driftData.baseline),
@@ -71,7 +74,6 @@ export default function App() {
         setLoadState({
           status: "ready",
           graph: buildGraph(bundle),
-          topArtists: bundle.core,
           topArtistName: bundle.core[0]?.name ?? null,
           topGenreName: topGenre(bundle.tagsByArtist),
           topGenres: topGenres(bundle.tagsByArtist),
@@ -127,7 +129,7 @@ export default function App() {
   }, [settings]);
 
   // Fetches Drift's two-period comparison only while the Drift lens is
-  // active -- no need to prefetch it while on the Map/Charts lenses.
+  // active -- no need to prefetch it while on the Map/Rhythm lenses.
   useEffect(() => {
     if (!settings || lens !== "drift") return;
     let cancelled = false;
@@ -147,6 +149,30 @@ export default function App() {
     };
   }, [settings, lens, recentPeriod, baselinePeriod]);
 
+  // Fetches Rhythm's scrobble history only while the Rhythm lens is
+  // active -- no need to prefetch it while on the Map/Drift lenses.
+  useEffect(() => {
+    if (!settings || lens !== "rhythm") return;
+    let cancelled = false;
+    setRhythmLoading(true);
+
+    fetchRhythmData(settings)
+      .then((bundle) => {
+        if (cancelled) return;
+        setRhythmData(bundle);
+        setRhythmLoading(false);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setRhythmData([]);
+        setRhythmLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [settings, lens]);
+
   // Clears the selected node's detail overlay when leaving the Map tab, so
   // it isn't left open (but hidden) as stale state if the user tabs back in.
   useEffect(() => {
@@ -164,7 +190,6 @@ export default function App() {
       setLoadState({
         status: "ready",
         graph: buildGraph(bundle),
-        topArtists: bundle.core,
         topArtistName: bundle.core[0]?.name ?? null,
         topGenreName: topGenre(bundle.tagsByArtist),
         topGenres: topGenres(bundle.tagsByArtist),
@@ -250,13 +275,9 @@ export default function App() {
               </aside>
             )}
           </div>
-        ) : lens === "charts" ? (
+        ) : lens === "rhythm" ? (
           <div className="map-area">
-            <ChartsScreen
-              topArtists={loadState.topArtists}
-              topAlbums={topAlbums}
-              topGenres={loadState.topGenres}
-            />
+            <RhythmScreen scrobbles={rhythmData} isLoading={rhythmLoading} />
           </div>
         ) : (
           <div className="map-area">

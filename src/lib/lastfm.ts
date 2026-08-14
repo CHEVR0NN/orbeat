@@ -7,6 +7,7 @@ import type {
   UserProfile,
   TopAlbum,
   NowPlayingTrack,
+  ScrobbleEvent,
 } from "../types";
 
 const BASE_URL = "https://ws.audioscrobbler.com/2.0/";
@@ -120,4 +121,36 @@ export async function getRecentTracks(
     album: t.album?.["#text"] || null,
     nowPlaying: t["@attr"]?.nowplaying === "true",
   }));
+}
+
+export async function getRecentTracksHistory(
+  apiKey: string,
+  username: string,
+  opts: { pages?: number; limit?: number } = {}
+): Promise<ScrobbleEvent[]> {
+  const { pages = 3, limit = 200 } = opts;
+  const events: ScrobbleEvent[] = [];
+
+  for (let page = 1; page <= pages; page++) {
+    const json = await call(
+      {
+        method: "user.getrecenttracks",
+        user: username,
+        limit: String(limit),
+        page: String(page),
+      },
+      apiKey
+    );
+    const tracks = json.recenttracks?.track ?? [];
+    for (const t of tracks) {
+      if (!t.date?.uts) continue;
+      events.push({
+        artist: t.artist?.["#text"] ?? "",
+        timestamp: Number(t.date.uts) * 1000,
+      });
+    }
+    if (tracks.length < limit) break;
+  }
+
+  return events;
 }

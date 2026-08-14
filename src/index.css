@@ -276,98 +276,38 @@ body::after {
   margin-top: 3rem;
 }
 
-.charts-screen {
+.rhythm-screen {
   height: 100%;
   padding: 1.5rem 2rem 2.5rem;
   overflow-y: auto;
   font-family: var(--font-hud);
 }
 
-.charts-screen-header {
+.rhythm-screen-header {
   margin: 0 0 1.5rem;
   color: var(--text-white);
   font-size: 0.95rem;
   opacity: 0.85;
 }
 
-.charts-screen-section {
-  margin-bottom: 2.25rem;
-}
-
-.charts-screen-section-title {
-  margin: 0 0 1rem;
-  font-family: var(--font-display);
-  font-size: 1.1rem;
-  color: var(--accent-yellow);
-  text-shadow: 0 0 6px var(--accent-yellow), 0 0 16px rgba(255, 184, 48, 0.7), 2px 2px 0px #000;
-}
-
-.charts-screen-empty {
+.rhythm-screen-empty {
   color: var(--text-white);
   font-size: 0.85rem;
   opacity: 0.75;
   margin: 0;
 }
 
-.charts-screen-rank-badge {
-  flex-shrink: 0;
-  background: var(--bg-space);
-  border: 2px solid var(--accent-cyan);
-  border-radius: 999px;
-  color: var(--accent-cyan);
-  font-family: var(--font-hud);
-  font-size: 0.65rem;
-  padding: 0.15rem 0.45rem;
-  box-shadow: 0 0 6px rgba(35, 229, 216, 0.5);
-}
-
-.charts-screen-artist-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-}
-
-.charts-screen-artist-row {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  background: var(--bg-card);
-  border: 1px solid var(--accent-cyan);
-  border-radius: 8px;
-  padding: 0.6rem 0.9rem;
-}
-
-.charts-screen-artist-name {
-  flex: 1;
-  min-width: 0;
-  font-family: var(--font-display);
-  font-size: 0.9rem;
-  color: var(--text-white);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.charts-screen-artist-playcount {
-  flex-shrink: 0;
-  font-size: 0.75rem;
-  color: var(--accent-cyan);
-}
-
-.charts-screen-album-grid {
+.rhythm-tiles {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 1.25rem;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
 }
 
-.charts-screen-album-card {
-  position: relative;
+.rhythm-tile {
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.35rem;
   background: var(--bg-card);
   border: 2px solid var(--accent-cyan);
   border-radius: 10px;
@@ -380,77 +320,200 @@ body::after {
   padding: 1rem 1.1rem;
 }
 
-.charts-screen-album-card .charts-screen-rank-badge {
-  position: absolute;
-  top: -0.6rem;
-  left: -0.6rem;
+.rhythm-tile-label {
+  font-family: var(--font-hud);
+  font-size: 0.65rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent-cyan);
+  opacity: 0.85;
 }
 
-.charts-screen-album-cover {
-  width: 100%;
-  aspect-ratio: 1 / 1;
-  border-radius: 6px;
-  object-fit: cover;
-}
-
-.charts-screen-album-cover-placeholder {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--bg-card);
-  font-size: 2rem;
-}
-
-.charts-screen-album-name {
+.rhythm-tile-value {
   font-family: var(--font-display);
-  font-size: 0.9rem;
+  font-size: 1.3rem;
   color: var(--accent-yellow);
   text-shadow: 0 0 6px var(--accent-yellow), 0 0 16px rgba(255, 184, 48, 0.7), 2px 2px 0px #000;
 }
 
-.charts-screen-album-artist {
-  font-size: 0.75rem;
-  color: var(--accent-cyan);
+.rhythm-tile-value-unit {
+  margin-left: 0.35rem;
+  font-family: var(--font-hud);
+  font-size: 0.7rem;
+  color: var(--text-white);
+  opacity: 0.7;
+  text-shadow: none;
 }
 
-.charts-screen-genre-bars {
+.rhythm-tile-sub {
+  font-family: var(--font-hud);
+  font-size: 0.75rem;
+  color: var(--text-white);
+  opacity: 0.75;
+}
+
+.rhythm-tile-split-row {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.15rem;
+}
+
+.rhythm-tile-split-side {
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
+  gap: 0.15rem;
 }
 
-.charts-screen-genre-row {
-  display: grid;
-  grid-template-columns: 140px 1fr 60px;
-  align-items: center;
-  gap: 0.75rem;
+.rhythm-tile-split-heading {
+  font-family: var(--font-hud);
+  font-size: 0.6rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent-pink);
+  opacity: 0.85;
 }
 
-.charts-screen-genre-label {
+.rhythm-tile-split-value {
+  font-family: var(--font-hud);
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--accent-yellow);
+}
+
+.rhythm-tile-split-artist {
+  font-family: var(--font-hud);
+  font-size: 0.7rem;
+  color: var(--text-white);
+  opacity: 0.75;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.rhythm-screen-heatmap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 1.5rem;
+}
+
+.rhythm-screen-heatmap-row {
+  display: grid;
+  grid-template-columns: 40px 1fr;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.rhythm-screen-day-label {
+  color: var(--accent-cyan);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.rhythm-screen-heatmap-cells {
+  display: grid;
+  grid-template-columns: repeat(24, 1fr);
+  gap: 2px;
+}
+
+.rhythm-screen-cell {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  border-radius: 2px;
+  background: var(--accent-cyan);
+  border: 1px solid rgba(35, 229, 216, 0.15);
+  transition: opacity 150ms ease;
+}
+
+.rhythm-screen-cell-artist-0 {
+  background: var(--accent-cyan);
+}
+
+.rhythm-screen-cell-artist-1 {
+  background: var(--accent-pink);
+}
+
+.rhythm-screen-cell-artist-2 {
+  background: var(--accent-yellow);
+}
+
+.rhythm-screen-cell-artist-3 {
+  background: var(--accent-coral);
+}
+
+.rhythm-screen-cell-artist-muted {
+  background: var(--text-white);
+}
+
+.rhythm-cell-popover {
+  position: absolute;
+  top: calc(100% + 6px);
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 120px;
+  background: var(--bg-card);
+  border: 2px solid var(--accent-cyan);
+  border-radius: 8px;
+  padding: 0.4rem 0.6rem;
+  font-family: var(--font-hud);
+  font-size: 0.7rem;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.rhythm-cell-popover-title {
+  color: var(--accent-yellow);
+  font-weight: bold;
+}
+
+.rhythm-cell-popover-line {
   color: var(--text-white);
-  font-size: 0.85rem;
 }
 
-.charts-screen-genre-track {
-  height: 18px;
-  background: var(--bg-space);
-  border-radius: 4px;
-  overflow: hidden;
+.rhythm-metric-toggle {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
 }
 
-.charts-screen-genre-bar {
-  height: 100%;
-  border-radius: 4px;
-}
-
-.charts-screen-genre-count {
-  text-align: right;
-  color: var(--text-white);
+.rhythm-metric-toggle-btn {
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: var(--font-hud);
   font-size: 0.75rem;
-  opacity: 0.8;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 0.4rem 0.9rem;
+  color: var(--accent-cyan);
+  font-weight: 700;
+  background: transparent;
+  border: 1px solid var(--accent-cyan);
+  border-bottom: 4px solid var(--accent-cyan);
+  transition: transform 120ms ease, box-shadow 150ms ease, background 150ms ease, color 150ms ease;
+}
+
+.rhythm-metric-toggle-btn:hover {
+  box-shadow: 0 0 12px var(--accent-cyan);
+}
+
+.rhythm-metric-toggle-btn.is-active {
+  background: var(--accent-cyan);
+  color: #000;
+  box-shadow: 0 0 12px var(--accent-cyan), 0 0 24px rgba(35, 229, 216, 0.5);
+}
+
+.rhythm-metric-toggle-btn:active {
+  border-bottom-width: 1px;
+  transform: translateY(2px);
+}
+
+.rhythm-artist-legend {
+  margin-bottom: 1.5rem;
 }
 
 .drift-panel {

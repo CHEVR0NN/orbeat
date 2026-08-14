@@ -51,7 +51,7 @@ export default function DriftChart({ entries, recentLabel = "Recent", baselineLa
   if (entries.length === 0) {
     return (
       <p className="drift-chart-empty">
-        No movement between these two windows — try a wider comparison.
+        No movement between these two windows. Try a wider comparison.
       </p>
     );
   }

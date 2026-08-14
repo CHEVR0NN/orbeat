@@ -11,6 +11,7 @@ import {
   topArtistsInWindow,
   HOUR_BUCKETS,
 } from "../lib/rhythm";
+import RhythmGame from "./RhythmGame";
 
 interface RhythmScreenProps {
   scrobbles: ScrobbleEvent[];
@@ -56,6 +57,7 @@ export default function RhythmScreen({ scrobbles, isLoading }: RhythmScreenProps
   const [hoveredCell, setHoveredCell] = useState<{ day: number; hour: number } | null>(null);
   const [highlightedCells, setHighlightedCells] = useState<Set<string> | null>(null);
   const [metric, setMetric] = useState<"count" | "artist">("count");
+  const [showGame, setShowGame] = useState(false);
 
   const matrix = useMemo(() => buildHourDayMatrix(scrobbles), [scrobbles]);
   const streak = useMemo(() => longestStreak(scrobbles), [scrobbles]);
@@ -200,6 +202,12 @@ export default function RhythmScreen({ scrobbles, isLoading }: RhythmScreenProps
               ))}
             </div>
           )}
+
+          <button type="button" className="rhythm-game-toggle" onClick={() => setShowGame((v) => !v)}>
+            {showGame ? "Hide rhythm game" : "Play a quick rhythm game"}
+          </button>
+
+          {showGame && <RhythmGame />}
         </>
       )}
     </section>

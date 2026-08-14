@@ -23,6 +23,14 @@
         "value": "space grotesk",
         "createdAt": "2026-08-10T21:21:05.649Z",
         "reason": "User explicitly chose Space Grotesk as the body font replacing Inter"
+      },
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "src/index.css"
+        ],
+        "createdAt": "2026-08-14T00:04:17.979Z"
       }
     ]
   }
